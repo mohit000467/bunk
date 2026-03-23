@@ -621,7 +621,32 @@ function Subjects({user}) {
           </div>
         )}
       </>}
+{/* 🔥 IMPORT FROM CYBERVIDYA */}
+<div className="glass" style={{padding:'20px',marginBottom:'20px'}}>
+  <div className="section-title">📥 Import from CyberVidya</div>
 
+  <textarea
+    id="paste-data"
+    placeholder="CyberVidya se attendance copy karke yaha paste karo..."
+    style={{
+      width:'100%',
+      height:'120px',
+      padding:'12px',
+      borderRadius:'10px',
+      background:'var(--surface)',
+      color:'var(--text)',
+      border:'1px solid var(--border)'
+    }}
+  />
+
+  <button 
+    className="btn btn-primary" 
+    style={{marginTop:'10px'}}
+    onClick={handlePasteImport}
+  >
+    ⚡ Paste & Import
+  </button>
+</div>
       {/* HEADER */}
       <div className="subjects-header">
         <div>
@@ -713,7 +738,58 @@ function Subjects({user}) {
     </div>
   );
 }
+// 🔥 IMPORT FEATURE
+function parseCyberVidyaData(text) {
+  const subjects = [];
+  const regex = /([A-Z][A-Za-z\s\-]{3,50})[\s\S]*?(\d+)\s*\/\s*(\d+)/g;
+  let match;
 
+  while ((match = regex.exec(text)) !== null) {
+    const name = match[1].trim();
+    const attended = parseInt(match[2]);
+    const conducted = parseInt(match[3]);
+
+    if (conducted > 0 && attended <= conducted) {
+      subjects.push({ name, attended, conducted });
+    }
+  }
+
+  return subjects;
+}
+
+async function handlePasteImport() {
+  const text = document.getElementById("paste-data").value;
+
+  if (!text) {
+    toast("Pehle data paste kar bro 😭", "error");
+    return;
+  }
+
+  const parsed = parseCyberVidyaData(text);
+
+  if (parsed.length === 0) {
+    toast("Data samajh nahi aaya 😅", "error");
+    return;
+  }
+
+  try {
+    for (const s of parsed) {
+      await col.add({
+        name: s.name,
+        attended: s.attended,
+        conducted: s.conducted,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    document.getElementById("paste-data").value = "";
+    toast(`🔥 ${parsed.length} subjects import ho gaye!`, "success");
+
+  } catch (err) {
+    console.error(err);
+    toast("Import error 😢", "error");
+  }
+}
 function App() {
   const [user,setUser] = useState(undefined);
   const [dark,setDark] = useState(true);
