@@ -1,1044 +1,711 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bunk Planner Pro 🎓</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<title>Bunk Planner Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0a0a0f;
-    --bg2: #111118;
-    --bg3: #16161f;
-    --surface: rgba(255,255,255,0.04);
-    --surface2: rgba(255,255,255,0.07);
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f0f0f8;
-    --text2: #9090aa;
-    --text3: #5a5a72;
-    --accent: #7c6af7;
-    --accent2: #a78bfa;
-    --green: #34d399;
-    --yellow: #fbbf24;
-    --red: #f87171;
-    --green-bg: rgba(52,211,153,0.1);
-    --yellow-bg: rgba(251,191,36,0.1);
-    --red-bg: rgba(248,113,113,0.1);
-    --radius: 16px;
-    --radius-sm: 10px;
-    --shadow: 0 8px 32px rgba(0,0,0,0.4);
-    --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
-  }
-
-  .light {
-    --bg: #f0f0f8;
-    --bg2: #e8e8f5;
-    --bg3: #ffffff;
-    --surface: rgba(0,0,0,0.03);
-    --surface2: rgba(0,0,0,0.06);
-    --border: rgba(0,0,0,0.08);
-    --border2: rgba(0,0,0,0.14);
-    --text: #111118;
-    --text2: #555568;
-    --text3: #aaaacc;
-    --shadow: 0 8px 32px rgba(0,0,0,0.1);
-    --shadow-lg: 0 20px 60px rgba(0,0,0,0.15);
-  }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    transition: background 0.3s, color 0.3s;
-    overflow-x: hidden;
-  }
-
-  #root { min-height: 100vh; }
-
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-  /* ANIMATIONS */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; } to { opacity: 1; }
-  }
-  @keyframes pulse {
-    0%,100% { transform: scale(1); }
-    50% { transform: scale(1.04); }
-  }
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  @keyframes bounceIn {
-    0% { opacity:0; transform: scale(0.8); }
-    60% { transform: scale(1.05); }
-    100% { opacity:1; transform: scale(1); }
-  }
-  @keyframes slideDown {
-    from { opacity:0; transform: translateY(-10px); }
-    to   { opacity:1; transform: translateY(0); }
-  }
-  @keyframes glow {
-    0%,100% { box-shadow: 0 0 20px rgba(124,106,247,0.2); }
-    50%      { box-shadow: 0 0 40px rgba(124,106,247,0.5); }
-  }
-  @keyframes neon-pulse {
-    0%,100% { text-shadow: 0 0 8px currentColor; }
-    50%      { text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
-  }
-
-  .animate-fadeUp  { animation: fadeUp 0.5s ease forwards; }
-  .animate-bounceIn { animation: bounceIn 0.4s ease forwards; }
-  .animate-slideDown { animation: slideDown 0.3s ease forwards; }
-
-  /* SKELETON */
-  .skeleton {
-    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: var(--radius-sm);
-  }
-
-  /* GLASS CARD */
-  .glass {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(12px);
-    border-radius: var(--radius);
-    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-  }
-  .glass:hover { border-color: var(--border2); }
-
-  /* BUTTONS */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 10px 20px; border-radius: var(--radius-sm); border: none;
-    font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px;
-    cursor: pointer; transition: all 0.18s; position: relative; overflow: hidden;
-  }
-  .btn::after {
-    content: ''; position: absolute; inset: 0;
-    background: rgba(255,255,255,0); transition: background 0.15s;
-  }
-  .btn:hover::after { background: rgba(255,255,255,0.07); }
-  .btn:active { transform: scale(0.97); }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-    box-shadow: 0 4px 20px rgba(124,106,247,0.35);
-  }
-  .btn-primary:hover { box-shadow: 0 6px 28px rgba(124,106,247,0.55); transform: translateY(-1px); }
-
-  .btn-ghost {
-    background: var(--surface); color: var(--text2);
-    border: 1px solid var(--border);
-  }
-  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
-
-  .btn-danger {
-    background: var(--red-bg); color: var(--red);
-    border: 1px solid rgba(248,113,113,0.2);
-  }
-  .btn-danger:hover { background: rgba(248,113,113,0.2); }
-
-  /* INPUTS */
-  .input-wrap { display: flex; flex-direction: column; gap: 6px; }
-  .input-label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: 0.05em; text-transform: uppercase; }
-  .input {
-    width: 100%; padding: 12px 14px; background: var(--surface);
-    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px;
-    transition: border-color 0.2s, box-shadow 0.2s; outline: none;
-  }
-  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,106,247,0.15); }
-  .input::placeholder { color: var(--text3); }
-  .input.error { border-color: var(--red); box-shadow: 0 0 0 3px rgba(248,113,113,0.15); }
-  .input-hint { font-size: 11px; color: var(--red); margin-top: 2px; }
-
-  /* NAV */
-  .nav {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(10,10,15,0.85); backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px; height: 64px;
-    display: flex; align-items: center; justify-content: space-between;
-    transition: background 0.3s;
-  }
-  .light .nav { background: rgba(240,240,248,0.85); }
-  .nav-logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); }
-  .nav-logo span { color: var(--accent); }
-  .nav-actions { display: flex; align-items: center; gap: 10px; }
-
-  .theme-toggle {
-    width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--border);
-    background: var(--surface); cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 18px; transition: all 0.2s;
-  }
-  .theme-toggle:hover { border-color: var(--accent); transform: rotate(20deg); }
-
-  /* MAIN LAYOUT */
-  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
-  @media (max-width: 600px) { .main { padding: 20px 16px; } }
-
-  /* HERO */
-  .hero { text-align: center; padding: 48px 0 40px; animation: fadeUp 0.6s ease; }
-  .hero-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: linear-gradient(135deg, rgba(124,106,247,0.15), rgba(167,139,250,0.1));
-    border: 1px solid rgba(124,106,247,0.25);
-    color: var(--accent2); font-size: 12px; font-weight: 600;
-    padding: 5px 12px; border-radius: 100px; margin-bottom: 18px;
-    letter-spacing: 0.05em;
-  }
-  .hero-title {
-    font-family: 'Syne', sans-serif; font-size: clamp(32px, 6vw, 56px);
-    font-weight: 800; line-height: 1.1; margin-bottom: 14px;
-    background: linear-gradient(135deg, var(--text) 30%, var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .hero-sub { font-size: 16px; color: var(--text2); max-width: 480px; margin: 0 auto; line-height: 1.6; }
-
-  /* STATS ROW */
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
-  @media (max-width: 480px) { .stats-row { grid-template-columns: 1fr; } }
-  .stat-card {
-    padding: 18px; text-align: center; animation: fadeUp 0.5s ease both;
-  }
-  .stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; }
-  .stat-label { font-size: 11px; color: var(--text2); margin-top: 4px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
-
-  /* TABS */
-  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 28px; }
-  .tab-btn {
-    flex: 1; padding: 9px; border-radius: 8px; border: none;
-    background: transparent; color: var(--text2); font-family: 'DM Sans', sans-serif;
-    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-  }
-  .tab-btn.active {
-    background: var(--bg3); color: var(--text);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  }
-  .tab-btn:hover:not(.active) { color: var(--text); }
-
-  /* CALCULATOR SECTION */
-  .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  @media (max-width: 700px) { .calc-grid { grid-template-columns: 1fr; } }
-
-  .calc-card { padding: 28px; }
-  .section-title {
-    font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
-    margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
-  }
-
-  .inputs-stack { display: flex; flex-direction: column; gap: 16px; }
-
-  /* CIRCULAR PROGRESS */
-  .circle-wrap { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-  .circle-container { position: relative; width: 180px; height: 180px; }
-  .circle-svg { transform: rotate(-90deg); }
-  .circle-bg { fill: none; stroke: var(--border); stroke-width: 10; }
-  .circle-fill {
-    fill: none; stroke-width: 10; stroke-linecap: round;
-    transition: stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1), stroke 0.4s;
-  }
-  .circle-text {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    text-align: center;
-  }
-  .circle-pct { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; }
-  .circle-label { font-size: 11px; color: var(--text2); margin-top: 3px; font-weight: 500; }
-
-  /* RESULT BOX */
-  .result-box {
-    padding: 18px 20px; border-radius: var(--radius-sm);
-    display: flex; align-items: flex-start; gap: 12px;
-    animation: bounceIn 0.4s ease;
-  }
-  .result-icon { font-size: 28px; flex-shrink: 0; }
-  .result-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 3px; }
-  .result-detail { font-size: 13px; color: var(--text2); line-height: 1.5; }
-
-  .result-safe  { background: var(--green-bg);  border: 1px solid rgba(52,211,153,0.2);  color: var(--green); }
-  .result-risk  { background: var(--yellow-bg); border: 1px solid rgba(251,191,36,0.2);  color: var(--yellow); }
-  .result-danger{ background: var(--red-bg);    border: 1px solid rgba(248,113,113,0.2); color: var(--red); }
-
-  /* MOTIVATION */
-  .motivation {
-    margin-top: 16px; padding: 14px 16px;
-    background: linear-gradient(135deg, rgba(124,106,247,0.1), rgba(167,139,250,0.05));
-    border: 1px solid rgba(124,106,247,0.2); border-radius: var(--radius-sm);
-    font-size: 14px; font-weight: 500; color: var(--accent2);
-    text-align: center; animation: slideDown 0.3s ease;
-  }
-
-  /* SUBJECTS */
-  .subjects-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-  .subjects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-
-  /* SUBJECT CARD */
-  .subject-card { padding: 22px; position: relative; overflow: hidden; }
-  .subject-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    border-radius: var(--radius) var(--radius) 0 0;
-  }
-  .subject-card.safe::before { background: linear-gradient(90deg, var(--green), transparent); }
-  .subject-card.risk::before { background: linear-gradient(90deg, var(--yellow), transparent); }
-  .subject-card.danger::before { background: linear-gradient(90deg, var(--red), transparent); }
-
-  .subject-name {
-    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
-    margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;
-  }
-  .subject-actions { display: flex; gap: 6px; }
-  .subject-actions button {
-    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--surface); cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 13px; transition: all 0.15s; color: var(--text2);
-  }
-  .subject-actions button:hover { background: var(--surface2); color: var(--text); }
-
-  .subject-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-  .subject-stat { text-align: center; padding: 8px; background: var(--surface); border-radius: 8px; }
-  .subject-stat-val { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
-  .subject-stat-label { font-size: 10px; color: var(--text2); margin-top: 2px; font-weight: 500; }
-
-  /* MINI PROGRESS */
-  .mini-bar-wrap { display: flex; flex-direction: column; gap: 5px; }
-  .mini-bar-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); font-weight: 500; }
-  .mini-bar-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-  .mini-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
-
-  /* BADGE */
-  .badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
-  }
-  .badge-safe   { background: var(--green-bg);  color: var(--green);  border: 1px solid rgba(52,211,153,0.25); }
-  .badge-risk   { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251,191,36,0.25); }
-  .badge-danger { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(248,113,113,0.25); }
-
-  /* ADD SUBJECT FORM */
-  .add-form { padding: 24px; animation: slideDown 0.3s ease; }
-  .add-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-  @media (max-width: 600px) { .add-form-grid { grid-template-columns: 1fr 1fr; } }
-  .add-form-footer { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
-
-  /* EMPTY STATE */
-  .empty-state { text-align: center; padding: 60px 24px; }
-  .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.5; }
-  .empty-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-  .empty-sub { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
-
-  /* TREND BARS */
-  .trend-wrap { padding: 24px; }
-  .trend-bars { display: flex; align-items: flex-end; gap: 8px; height: 100px; margin-top: 16px; }
-  .trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-  .trend-bar {
-    width: 100%; border-radius: 5px 5px 0 0;
-    transition: height 0.8s cubic-bezier(0.34,1.56,0.64,1);
-    min-height: 4px; position: relative;
-  }
-  .trend-bar:hover { filter: brightness(1.2); }
-  .trend-bar-pct { font-size: 10px; color: var(--text2); font-weight: 600; }
-  .trend-bar-name { font-size: 10px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 56px; text-align: center; }
-
-  /* LOADING SKELETON */
-  .sk-card { padding: 22px; }
-  .sk-line { height: 14px; border-radius: 7px; margin-bottom: 10px; }
-  .sk-line.short { width: 40%; }
-  .sk-line.med { width: 65%; }
-  .sk-circle { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px; }
-
-  /* TOASTS */
-  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-  @media (max-width: 480px) { .toast-container { left: 16px; right: 16px; } }
-  .toast {
-    padding: 14px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500;
-    display: flex; align-items: center; gap: 10px; max-width: 340px;
-    box-shadow: var(--shadow-lg);
-    animation: bounceIn 0.35s ease;
-    border: 1px solid var(--border2);
-  }
-  .toast-success { background: #0a2016; color: var(--green); border-color: rgba(52,211,153,0.2); }
-  .toast-error   { background: #200a0a; color: var(--red);   border-color: rgba(248,113,113,0.2); }
-  .toast-info    { background: #0d0c1f; color: var(--accent2); border-color: rgba(124,106,247,0.2); }
-  .light .toast-success { background: #f0fdf8; }
-  .light .toast-error   { background: #fff5f5; }
-  .light .toast-info    { background: #f5f3ff; }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
-    z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
-    animation: fadeIn 0.2s ease;
-  }
-  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 28px; max-width: 420px; width: 100%; animation: bounceIn 0.3s ease; }
-  .modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 20px; }
-  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
-
-  /* FOOTER */
-  .footer { text-align: center; padding: 32px 24px 40px; color: var(--text3); font-size: 13px; }
-  .footer span { color: var(--accent); }
-
-  /* RESPONSIVE */
-  @media (max-width: 480px) {
-    .calc-grid, .subjects-grid { grid-template-columns: 1fr; }
-    .stats-row { grid-template-columns: repeat(3, 1fr); }
-    .stat-value { font-size: 22px; }
-  }
-
-  /* number input arrows hide */
-  input[type=number]::-webkit-inner-spin-button,
-  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  input[type=number] { -moz-appearance: textfield; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--bg2:#111118;--bg3:#16161f;--surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#f0f0f8;--text2:#9090aa;--text3:#5a5a72;--accent:#7c6af7;--accent2:#a78bfa;--green:#34d399;--yellow:#fbbf24;--red:#f87171;--green-bg:rgba(52,211,153,0.1);--yellow-bg:rgba(251,191,36,0.1);--red-bg:rgba(248,113,113,0.1);--radius:16px;--radius-sm:10px;--shadow-lg:0 20px 60px rgba(0,0,0,0.5)}
+.light{--bg:#f0f0f8;--bg2:#e8e8f5;--bg3:#fff;--surface:rgba(0,0,0,0.03);--surface2:rgba(0,0,0,0.06);--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);--text:#111118;--text2:#555568;--text3:#aaaacc}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s;overflow-x:hidden}
+#root{min-height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes bounceIn{0%{opacity:0;transform:scale(0.85)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.3}}
+.skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius-sm)}
+.glass{background:var(--surface);border:1px solid var(--border);backdrop-filter:blur(12px);border-radius:var(--radius);transition:border-color .2s}
+.glass:hover{border-color:var(--border2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:var(--radius-sm);border:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all .18s}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(124,106,247,.35)}
+.btn-primary:hover{box-shadow:0 6px 28px rgba(124,106,247,.55);transform:translateY(-1px)}
+.btn-ghost{background:var(--surface);color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-full{width:100%;padding:13px}
+.input-wrap{display:flex;flex-direction:column;gap:6px}
+.input-label{font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase}
+.input{width:100%;padding:12px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;transition:border-color .2s,box-shadow .2s;outline:none}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,106,247,.15)}
+.input::placeholder{color:var(--text3)}
+.input.error{border-color:var(--red);box-shadow:0 0 0 3px rgba(248,113,113,.12)}
+.input-hint{font-size:11px;color:var(--red);margin-top:2px}
+.input-group{position:relative}.input-group .input{padding-right:44px}
+.input-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:17px;color:var(--text3)}
+.nav{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
+.light .nav{background:rgba(240,240,248,.9)}
+.nav-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800}.nav-logo span{color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text2)}
+.nav-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
+.theme-toggle{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .2s}
+.theme-toggle:hover{border-color:var(--accent);transform:rotate(20deg)}
+.main{max-width:1100px;margin:0 auto;padding:32px 24px}
+@media(max-width:600px){.main{padding:20px 16px}}
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 20% 50%,rgba(124,106,247,.1) 0%,transparent 60%)}
+.auth-card{width:100%;max-width:420px;padding:40px 36px;animation:bounceIn .4s ease}
+@media(max-width:480px){.auth-card{padding:26px 20px}}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo-icon{font-size:52px;display:block;margin-bottom:10px;animation:float 3s ease infinite}
+.auth-logo-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800}.auth-logo-title span{color:var(--accent)}
+.auth-logo-sub{font-size:13px;color:var(--text2);margin-top:5px}
+.auth-tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px;margin-bottom:24px}
+.auth-tab{flex:1;padding:9px;border-radius:8px;border:none;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.auth-tab.active{background:var(--bg3);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.auth-stack{display:flex;flex-direction:column;gap:15px}
+.hero{text-align:center;padding:40px 0 32px;animation:fadeUp .5s ease}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(124,106,247,.15),rgba(167,139,250,.1));border:1px solid rgba(124,106,247,.25);color:var(--accent2);font-size:12px;font-weight:600;padding:5px 14px;border-radius:100px;margin-bottom:16px}
+.hero-title{font-family:'Syne',sans-serif;font-size:clamp(28px,6vw,52px);font-weight:800;line-height:1.1;margin-bottom:12px;background:linear-gradient(135deg,var(--text) 30%,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:15px;color:var(--text2);max-width:460px;margin:0 auto;line-height:1.6}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px;margin-bottom:28px}
+.tab-btn{flex:1;padding:9px;border-radius:8px;border:none;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.tab-btn.active{background:var(--bg3);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.tab-btn:hover:not(.active){color:var(--text)}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:700px){.calc-grid{grid-template-columns:1fr}}
+.calc-card{padding:28px}
+.section-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.inputs-stack{display:flex;flex-direction:column;gap:16px}
+.circle-wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
+.result-box{padding:16px 18px;border-radius:var(--radius-sm);display:flex;align-items:flex-start;gap:12px;animation:bounceIn .4s ease}
+.result-icon{font-size:26px;flex-shrink:0}
+.result-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:2px}
+.result-detail{font-size:13px;color:var(--text2);line-height:1.5}
+.result-safe{background:var(--green-bg);border:1px solid rgba(52,211,153,.2);color:var(--green)}
+.result-risk{background:var(--yellow-bg);border:1px solid rgba(251,191,36,.2);color:var(--yellow)}
+.result-danger{background:var(--red-bg);border:1px solid rgba(248,113,113,.2);color:var(--red)}
+.motivation{margin-top:14px;padding:13px 16px;background:linear-gradient(135deg,rgba(124,106,247,.1),rgba(167,139,250,.05));border:1px solid rgba(124,106,247,.2);border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--accent2);text-align:center}
+.mini-bar-wrap{display:flex;flex-direction:column;gap:5px;width:100%}
+.mini-bar-header{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);font-weight:500}
+.mini-bar-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(0.34,1.56,0.64,1)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.04em}
+.badge-safe{background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,.25)}
+.badge-risk{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,.25)}
+.badge-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,.25)}
+.subjects-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.subjects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.subject-card{padding:22px;position:relative;overflow:hidden}
+.subject-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
+.subject-card.safe::before{background:linear-gradient(90deg,var(--green),transparent)}
+.subject-card.risk::before{background:linear-gradient(90deg,var(--yellow),transparent)}
+.subject-card.danger::before{background:linear-gradient(90deg,var(--red),transparent)}
+.subject-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.subject-actions{display:flex;gap:6px}
+.subject-actions button{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;color:var(--text2)}
+.subject-actions button:hover{background:var(--surface2);color:var(--text)}
+.subject-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.subject-stat{text-align:center;padding:8px;background:var(--surface);border-radius:8px}
+.subject-stat-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+.subject-stat-label{font-size:10px;color:var(--text2);margin-top:2px}
+.stats-row{display:grid;gap:14px;margin-bottom:20px}
+.stat-card{padding:16px;text-align:center;animation:fadeUp .5s ease both}
+.stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;line-height:1}
+.stat-label{font-size:11px;color:var(--text2);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.add-form{padding:24px;animation:slideDown .3s ease}
+.add-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.add-form-footer{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.empty-state{text-align:center;padding:60px 24px}
+.empty-icon{font-size:56px;margin-bottom:16px;opacity:.5}
+.empty-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.trend-wrap{padding:24px;margin-bottom:24px}
+.trend-bars{display:flex;align-items:flex-end;gap:8px;height:100px;margin-top:16px}
+.trend-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.trend-bar{width:100%;border-radius:5px 5px 0 0;transition:height .8s cubic-bezier(0.34,1.56,0.64,1);min-height:4px}
+.trend-bar:hover{filter:brightness(1.2)}
+.trend-bar-pct{font-size:10px;color:var(--text2);font-weight:600}
+.trend-bar-name{font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px;text-align:center}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;animation:bounceIn .3s ease}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px}
+@media(max-width:480px){.toast-container{left:16px;right:16px}}
+.toast{padding:13px 17px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;max-width:340px;box-shadow:var(--shadow-lg);animation:bounceIn .35s ease;border:1px solid var(--border2)}
+.toast-success{background:#0a2016;color:var(--green);border-color:rgba(52,211,153,.2)}
+.toast-error{background:#200a0a;color:var(--red);border-color:rgba(248,113,113,.2)}
+.toast-info{background:#0d0c1f;color:var(--accent2);border-color:rgba(124,106,247,.2)}
+.light .toast-success{background:#f0fdf8}.light .toast-error{background:#fff5f5}.light .toast-info{background:#f5f3ff}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0}
+.sync-dot.syncing{background:var(--yellow);animation:dotPulse 1s ease infinite}
+.sync-label{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;margin-top:3px}
+.footer{text-align:center;padding:28px 24px 40px;color:var(--text3);font-size:13px}
+.footer span{color:var(--accent)}
+@media(max-width:480px){.calc-grid,.subjects-grid{grid-template-columns:1fr}}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
 </style>
 </head>
 <body>
 <div id="root"></div>
+
+<!-- ✅ CORRECT ORDER: React first, then Firebase, then init, then app -->
+
+<!-- 1. React + Babel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+<!-- 2. Firebase SDKs (synchronous, blocking) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<!-- 3. Firebase Init (runs after SDKs above are fully parsed) -->
+<script>
+var db = null, auth = null, firebaseReady = false;
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyD-m8WFH-riP26_kRgcyLcvOJ9epCs_YPY",
+    authDomain: "bunk-project-c61e8.firebaseapp.com",
+    projectId: "bunk-project-c61e8",
+    storageBucket: "bunk-project-c61e8.firebasestorage.app",
+    messagingSenderId: "400571175115",
+    appId: "1:400571175115:web:aec6e842d8b83c126a8b4e"
+  });
+  auth = firebase.auth();
+  db = firebase.firestore();
+  firebaseReady = true;
+  console.log("Firebase ready!");
+} catch(e) {
+  console.error("Firebase init error:", e.message);
+}
+</script>
+
+<!-- 4. React App (Babel transpiles JSX, runs after all scripts above) -->
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
+const { useState, useEffect } = React;
 
-// ─── UTILS ───────────────────────────────────────────────────────────────────
-function calcAttendance(conducted, attended) {
-  if (!conducted || conducted === 0) return 0;
-  return Math.round((attended / conducted) * 1000) / 10;
-}
+const calcAtt   = (c,a) => (!c||c===0)?0:Math.round((a/c)*1000)/10;
+const getStatus = (p,t) => p>=t?'safe':p>=t-10?'risk':'danger';
+const sColor    = s => s==='safe'?'var(--green)':s==='risk'?'var(--yellow)':'var(--red)';
+const canBunk   = (c,a,t) => { const m=Math.floor((a*100/t)-c); return m>0?m:0; };
+const needAtt   = (c,a,t) => { if(t>=100)return 999; const x=Math.ceil((t*c-100*a)/(100-t)); return x>0?x:0; };
+const motivate  = (p,t,b) => {
+  if(p===0) return '📚 Pehle class toh le bhai...';
+  if(p>=t+20) return '😎 Bhai tu safe! '+b+' aur bunk maar!';
+  if(p>=t+10) return '🎯 Solid! Thoda bunk room hai — chill!';
+  if(p>=t)    return '✅ Target pe hai. Ek zyada bunk mat maarna!';
+  if(p>=t-10) return '⚠️ Risky! Classes attend kar warna short!';
+  if(p>=t-20) return '😬 Danger! Padh le warna short 💀';
+  return '🚨 SOS! Attendance badhao — exam nahi de payega!';
+};
 
-function classesCanBunk(conducted, attended, target) {
-  // attended / (conducted + x) = target/100 → solve for x (negative means bunk)
-  // attended / (conducted + x) >= target/100
-  // x <= (attended*100/target) - conducted
-  const max = Math.floor((attended * 100 / target) - conducted);
-  return max > 0 ? max : 0;
-}
-
-function classesToAttend(conducted, attended, target) {
-  // (attended + x) / (conducted + x) = target/100
-  // x = (target*conducted - 100*attended) / (100 - target)
-  if (target >= 100) return Infinity;
-  const x = Math.ceil((target * conducted - 100 * attended) / (100 - target));
-  return x > 0 ? x : 0;
-}
-
-function getStatus(pct, target) {
-  if (pct >= target + 5) return 'safe';
-  if (pct >= target) return 'safe';
-  if (pct >= target - 10) return 'risk';
-  return 'danger';
-}
-
-function statusColor(status) {
-  if (status === 'safe') return 'var(--green)';
-  if (status === 'risk') return 'var(--yellow)';
-  return 'var(--red)';
-}
-
-function getMotivation(pct, target, canBunk) {
-  if (pct === 0) return '📚 Pehle class toh le bhai...';
-  if (pct >= target + 20) return `😎 Bhai tu safe hai! ${canBunk} classes aur maar maar ke bunk kar!`;
-  if (pct >= target + 10) return `🎯 Solid attendance! Thoda aur bunk space hai — enjoy kar!`;
-  if (pct >= target) return `✅ Target par hai, careful rehna. Ek zyada bunk aur risk zone!`;
-  if (pct >= target - 10) return `⚠️ Bhai yaar, thoda risky ho raha hai. Classes attend kar warna short!`;
-  if (pct >= target - 20) return `😬 Danger zone mein aa gaya! Padh le warna short ho jayega 💀`;
-  return `🚨 Bhai SOS! Seriously attendance badhao — warna exam nahi de payega!`;
-}
-
-const MOTIVATIONS_SAFE  = ['😎','🎉','🔥','✅','👑'];
-const MOTIVATIONS_RISK  = ['⚠️','😬','👀','🫠'];
-const MOTIVATIONS_DANGER= ['🚨','💀','😰','📵'];
-
-// ─── TOAST SYSTEM ─────────────────────────────────────────────────────────────
-let toastId = 0;
-let addToastFn = null;
-function toast(msg, type = 'info') {
-  if (addToastFn) addToastFn({ id: ++toastId, msg, type });
-}
+let _tid=0, _add=null;
+const toast = (msg, type='info') => _add && _add({id:++_tid, msg, type});
 
 function ToastContainer() {
-  const [toasts, setToasts] = useState([]);
-  addToastFn = (t) => {
-    setToasts(p => [...p, t]);
-    setTimeout(() => setToasts(p => p.filter(x => x.id !== t.id)), 3200);
-  };
-  const icons = { success: '✅', error: '❌', info: '💡' };
+  const [list, set] = useState([]);
+  _add = t => { set(p=>[...p,t]); setTimeout(()=>set(p=>p.filter(x=>x.id!==t.id)), 3200); };
   return (
     <div className="toast-container">
-      {toasts.map(t => (
+      {list.map(t=>(
         <div key={t.id} className={`toast toast-${t.type}`}>
-          <span>{icons[t.type]}</span> {t.msg}
+          {t.type==='success'?'✅':t.type==='error'?'❌':'💡'} {t.msg}
         </div>
       ))}
     </div>
   );
 }
 
-// ─── CIRCULAR PROGRESS ────────────────────────────────────────────────────────
-function CircularProgress({ pct, target }) {
-  const r = 80, circ = 2 * Math.PI * r;
-  const status = getStatus(pct, target);
-  const color = statusColor(status);
-  const dashoffset = circ - (Math.min(pct, 100) / 100) * circ;
-
+function Ring({pct, target, size=180, sw=10}) {
+  const r=(size-sw*2)/2, circ=2*Math.PI*r, color=sColor(getStatus(pct,target));
   return (
-    <div className="circle-container">
-      <svg className="circle-svg" width="180" height="180" viewBox="0 0 180 180">
-        <circle className="circle-bg" cx="90" cy="90" r={r}/>
-        <circle
-          className="circle-fill"
-          cx="90" cy="90" r={r}
-          stroke={color}
-          strokeDasharray={circ}
-          strokeDashoffset={dashoffset}
-        />
+    <div style={{position:'relative',width:size,height:size,flexShrink:0}}>
+      <svg style={{transform:'rotate(-90deg)'}} width={size} height={size}>
+        <circle fill="none" stroke="var(--border)" strokeWidth={sw} cx={size/2} cy={size/2} r={r}/>
+        <circle fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"
+          cx={size/2} cy={size/2} r={r} strokeDasharray={circ}
+          strokeDashoffset={circ-(Math.min(pct,100)/100)*circ}
+          style={{transition:'stroke-dashoffset .8s cubic-bezier(0.34,1.56,0.64,1),stroke .4s'}}/>
       </svg>
-      <div className="circle-text">
-        <div className="circle-pct" style={{ color }}>{pct.toFixed(1)}%</div>
-        <div className="circle-label">attendance</div>
+      <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'}}>
+        <div style={{fontFamily:'Syne,sans-serif',fontSize:size===180?'32px':'15px',fontWeight:800,color,lineHeight:1}}>
+          {pct.toFixed(size===180?1:0)}%
+        </div>
+        {size===180 && <div style={{fontSize:'11px',color:'var(--text2)',marginTop:3}}>attendance</div>}
       </div>
     </div>
   );
 }
 
-// ─── MINI BAR ─────────────────────────────────────────────────────────────────
-function MiniBar({ pct, target }) {
-  const status = getStatus(pct, target);
-  const color = statusColor(status);
+function MiniBar({pct, target}) {
+  const color = sColor(getStatus(pct,target));
   return (
     <div className="mini-bar-wrap">
-      <div className="mini-bar-header">
-        <span>0%</span>
-        <span style={{color}}>●  {pct.toFixed(1)}%</span>
-        <span>100%</span>
-      </div>
+      <div className="mini-bar-header"><span>0%</span><span style={{color}}>● {pct.toFixed(1)}%</span><span>100%</span></div>
       <div className="mini-bar-track">
-        <div className="mini-bar-fill" style={{ width: `${Math.min(pct,100)}%`, background: color }}/>
+        <div className="mini-bar-fill" style={{width:`${Math.min(pct,100)}%`,background:color}}/>
       </div>
-      <div className="mini-bar-header">
-        <span></span>
-        <span style={{color:'var(--text3)',fontSize:'10px'}}>Target: {target}%</span>
-        <span></span>
+      <div className="mini-bar-header"><span/><span style={{color:'var(--text3)',fontSize:'10px'}}>Target: {target}%</span><span/></div>
+    </div>
+  );
+}
+
+function AuthScreen({onAuth}) {
+  const [mode,setMode]     = useState('login');
+  const [name,setName]     = useState('');
+  const [email,setEmail]   = useState('');
+  const [pass,setPass]     = useState('');
+  const [showPw,setShowPw] = useState(false);
+  const [loading,setLoading] = useState(false);
+  const [errors,setErrors] = useState({});
+
+  function validate() {
+    const e={};
+    if(mode==='signup' && !name.trim()) e.name='Name required';
+    if(!email.trim()) e.email='Email required';
+    else if(!/\S+@\S+\.\S+/.test(email)) e.email='Invalid email';
+    if(!pass || pass.length<6) e.pass='Min 6 characters';
+    return e;
+  }
+
+  async function submit() {
+    const e=validate(); setErrors(e);
+    if(Object.keys(e).length) return;
+    setLoading(true);
+    try {
+      if(mode==='login') {
+        const c = await auth.signInWithEmailAndPassword(email.trim(), pass);
+        toast('Welcome back! 👋','success');
+        onAuth(c.user);
+      } else {
+        const c = await auth.createUserWithEmailAndPassword(email.trim(), pass);
+        await c.user.updateProfile({displayName: name.trim()});
+        toast(`Welcome ${name}! 🎉`,'success');
+        onAuth(c.user);
+      }
+    } catch(err) {
+      const m = err.code==='auth/user-not-found'       ? 'No account with this email' :
+                err.code==='auth/wrong-password'       ? 'Wrong password bhai 🙈' :
+                err.code==='auth/email-already-in-use' ? 'Email already registered' :
+                err.code==='auth/too-many-requests'    ? 'Too many attempts. Wait karo!' :
+                err.message;
+      toast(m,'error');
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="auth-page">
+      <div className="glass auth-card">
+        <div className="auth-logo">
+          <span className="auth-logo-icon">🎓</span>
+          <div className="auth-logo-title">Bunk<span>Planner</span> Pro</div>
+          <div className="auth-logo-sub">Bunk smarter, not harder 😎</div>
+        </div>
+        <div className="auth-tabs">
+          <button className={`auth-tab ${mode==='login'?'active':''}`} onClick={()=>{setMode('login');setErrors({})}}>🔑 Login</button>
+          <button className={`auth-tab ${mode==='signup'?'active':''}`} onClick={()=>{setMode('signup');setErrors({})}}>✨ Sign Up</button>
+        </div>
+        <div className="auth-stack">
+          {mode==='signup' && (
+            <div className="input-wrap">
+              <label className="input-label">Your Name</label>
+              <input className={`input ${errors.name?'error':''}`} placeholder="e.g. Mohit Sharma"
+                value={name} onChange={e=>{setName(e.target.value);setErrors(p=>({...p,name:''}))}}
+                onKeyDown={e=>e.key==='Enter'&&submit()}/>
+              {errors.name && <span className="input-hint">{errors.name}</span>}
+            </div>
+          )}
+          <div className="input-wrap">
+            <label className="input-label">Email</label>
+            <input className={`input ${errors.email?'error':''}`} type="email" placeholder="you@email.com"
+              value={email} onChange={e=>{setEmail(e.target.value);setErrors(p=>({...p,email:''}))}}
+              onKeyDown={e=>e.key==='Enter'&&submit()}/>
+            {errors.email && <span className="input-hint">{errors.email}</span>}
+          </div>
+          <div className="input-wrap">
+            <label className="input-label">Password</label>
+            <div className="input-group">
+              <input className={`input ${errors.pass?'error':''}`} type={showPw?'text':'password'} placeholder="Min 6 characters"
+                value={pass} onChange={e=>{setPass(e.target.value);setErrors(p=>({...p,pass:''}))}}
+                onKeyDown={e=>e.key==='Enter'&&submit()}/>
+              <button className="input-eye" onClick={()=>setShowPw(p=>!p)} type="button">{showPw?'🙈':'👁️'}</button>
+            </div>
+            {errors.pass && <span className="input-hint">{errors.pass}</span>}
+          </div>
+          <button className="btn btn-primary btn-full" onClick={submit} disabled={loading}>
+            {loading ? '⏳ Please wait...' : mode==='login' ? '🚀 Login' : '✨ Create Account'}
+          </button>
+        </div>
+        <div style={{textAlign:'center',marginTop:'20px',fontSize:'12px',color:'var(--text3)'}}>
+          {mode==='login' ? "Don't have an account? " : 'Already registered? '}
+          <button onClick={()=>{setMode(mode==='login'?'signup':'login');setErrors({})}}
+            style={{background:'none',border:'none',color:'var(--accent2)',fontWeight:700,cursor:'pointer',fontSize:'12px'}}>
+            {mode==='login' ? 'Sign Up Free' : 'Login'}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── CALCULATOR PANEL ─────────────────────────────────────────────────────────
 function Calculator() {
-  const [conducted, setConducted] = useState('');
-  const [attended, setAttended]   = useState('');
-  const [target, setTarget]       = useState('75');
-  const [errors, setErrors]       = useState({});
-  const [result, setResult]       = useState(null);
-  const [loading, setLoading]     = useState(false);
+  const [c,setC]=useState(''), [a,setA]=useState(''), [t,setT]=useState('75');
+  const [errors,setErrors]=useState({}), [result,setResult]=useState(null), [loading,setLoading]=useState(false);
 
   function validate() {
-    const e = {};
-    if (!conducted || isNaN(conducted) || +conducted < 0) e.conducted = 'Enter a valid number';
-    if (!attended  || isNaN(attended)  || +attended < 0)  e.attended  = 'Enter a valid number';
-    if (!target    || isNaN(target)    || +target < 1 || +target > 100) e.target = '1–100 only';
-    if (!e.conducted && !e.attended && +attended > +conducted) e.attended = 'Cannot exceed total classes';
+    const e={};
+    if(!c||isNaN(c)||+c<0) e.c='Enter a valid number';
+    if(!a||isNaN(a)||+a<0) e.a='Enter a valid number';
+    if(!t||isNaN(t)||+t<1||+t>100) e.t='1-100 only';
+    if(!e.c&&!e.a&&+a>+c) e.a='Cannot exceed total';
     return e;
   }
 
   function calculate() {
-    const e = validate();
-    setErrors(e);
-    if (Object.keys(e).length) return;
+    const e=validate(); setErrors(e);
+    if(Object.keys(e).length) return;
     setLoading(true);
-    setTimeout(() => {
-      const c = +conducted, a = +attended, t = +target;
-      const pct = calcAttendance(c, a);
-      const status = getStatus(pct, t);
-      const bunk = classesCanBunk(c, a, t);
-      const need = classesToAttend(c, a, t);
-      setResult({ pct, status, bunk, need, target: t });
+    setTimeout(()=>{
+      const pct=calcAtt(+c,+a), tgt=+t;
+      setResult({pct, status:getStatus(pct,tgt), bunk:canBunk(+c,+a,tgt), need:needAtt(+c,+a,tgt), target:tgt});
       setLoading(false);
-    }, 600);
+    }, 500);
   }
 
-  const res = result;
-
+  const r=result;
   return (
-    <div>
-      <div className="calc-grid">
-        {/* LEFT — INPUTS */}
-        <div className="glass calc-card animate-fadeUp" style={{animationDelay:'0.1s'}}>
-          <div className="section-title">
-            <span>🧮</span> Calculator
+    <div className="calc-grid">
+      <div className="glass calc-card" style={{animation:'fadeUp .4s ease'}}>
+        <div className="section-title">🧮 Calculator</div>
+        <div className="inputs-stack">
+          <div className="input-wrap">
+            <label className="input-label">Total Classes Conducted</label>
+            <input className={`input ${errors.c?'error':''}`} type="number" min="0" placeholder="e.g. 40"
+              value={c} onChange={e=>{setC(e.target.value);setErrors(p=>({...p,c:''}))}}/>
+            {errors.c && <span className="input-hint">{errors.c}</span>}
           </div>
-          <div className="inputs-stack">
-            <div className="input-wrap">
-              <label className="input-label">Total Classes Conducted</label>
-              <input
-                className={`input ${errors.conducted ? 'error' : ''}`}
-                type="number" min="0" placeholder="e.g. 40"
-                value={conducted}
-                onChange={e => { setConducted(e.target.value); setErrors(p => ({...p, conducted: ''})); }}
-              />
-              {errors.conducted && <span className="input-hint">{errors.conducted}</span>}
-            </div>
-
-            <div className="input-wrap">
-              <label className="input-label">Classes Attended</label>
-              <input
-                className={`input ${errors.attended ? 'error' : ''}`}
-                type="number" min="0" placeholder="e.g. 30"
-                value={attended}
-                onChange={e => { setAttended(e.target.value); setErrors(p => ({...p, attended: ''})); }}
-              />
-              {errors.attended && <span className="input-hint">{errors.attended}</span>}
-            </div>
-
-            <div className="input-wrap">
-              <label className="input-label">Target Attendance %</label>
-              <input
-                className={`input ${errors.target ? 'error' : ''}`}
-                type="number" min="1" max="100" placeholder="75"
-                value={target}
-                onChange={e => { setTarget(e.target.value); setErrors(p => ({...p, target: ''})); }}
-              />
-              {errors.target && <span className="input-hint">{errors.target}</span>}
-            </div>
-
-            <button className="btn btn-primary" style={{width:'100%', padding:'13px'}} onClick={calculate}>
-              {loading ? <span style={{animation:'spin 0.7s linear infinite',display:'inline-block'}}>⏳</span> : '⚡'}
-              {loading ? ' Calculating...' : ' Calculate Now'}
-            </button>
+          <div className="input-wrap">
+            <label className="input-label">Classes Attended</label>
+            <input className={`input ${errors.a?'error':''}`} type="number" min="0" placeholder="e.g. 30"
+              value={a} onChange={e=>{setA(e.target.value);setErrors(p=>({...p,a:''}))}}/>
+            {errors.a && <span className="input-hint">{errors.a}</span>}
           </div>
+          <div className="input-wrap">
+            <label className="input-label">Target Attendance %</label>
+            <input className={`input ${errors.t?'error':''}`} type="number" min="1" max="100" placeholder="75"
+              value={t} onChange={e=>{setT(e.target.value);setErrors(p=>({...p,t:''}))}}/>
+            {errors.t && <span className="input-hint">{errors.t}</span>}
+          </div>
+          <button className="btn btn-primary btn-full" onClick={calculate}>
+            {loading ? '⏳ Calculating...' : '⚡ Calculate'}
+          </button>
         </div>
-
-        {/* RIGHT — RESULT */}
-        <div className="glass calc-card animate-fadeUp" style={{animationDelay:'0.2s'}}>
-          <div className="section-title">
-            <span>📊</span> Analysis
+      </div>
+      <div className="glass calc-card" style={{animation:'fadeUp .4s ease .1s both'}}>
+        <div className="section-title">📊 Analysis</div>
+        {loading && (
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'14px',paddingTop:'10px'}}>
+            <div className="skeleton" style={{width:'130px',height:'130px',borderRadius:'50%'}}/>
+            <div className="skeleton" style={{width:'85%',height:'14px'}}/>
           </div>
-
-          {loading && (
-            <div className="sk-card" style={{padding:0}}>
-              <div className="sk-circle skeleton"></div>
-              <div className="sk-line skeleton med"></div>
-              <div className="sk-line skeleton short"></div>
-            </div>
-          )}
-
-          {!loading && !res && (
-            <div style={{textAlign:'center', padding:'32px 0', color:'var(--text3)'}}>
-              <div style={{fontSize:'48px',marginBottom:'12px'}}>📐</div>
-              <div style={{fontSize:'14px'}}>Enter values and hit Calculate</div>
-            </div>
-          )}
-
-          {!loading && res && (
-            <div className="circle-wrap">
-              <CircularProgress pct={res.pct} target={res.target} />
-
-              <MiniBar pct={res.pct} target={res.target} />
-
-              {res.status !== 'danger' && res.pct >= res.target ? (
-                <div className="result-box result-safe" style={{width:'100%'}}>
-                  <div className="result-icon">😎</div>
-                  <div>
-                    <div className="result-title">You're Safe!</div>
-                    <div className="result-detail">
-                      You can bunk <strong>{res.bunk}</strong> more class{res.bunk !== 1 ? 'es' : ''} without falling below {res.target}%
-                    </div>
-                  </div>
+        )}
+        {!loading && !r && (
+          <div style={{textAlign:'center',padding:'36px 0',color:'var(--text3)'}}>
+            <div style={{fontSize:'48px',marginBottom:'14px',opacity:.4}}>📐</div>
+            <div style={{fontSize:'13px'}}>Enter values and hit Calculate</div>
+          </div>
+        )}
+        {!loading && r && (
+          <div className="circle-wrap">
+            <Ring pct={r.pct} target={r.target}/>
+            <MiniBar pct={r.pct} target={r.target}/>
+            <div className={`result-box result-${r.status}`} style={{width:'100%'}}>
+              <div className="result-icon">{r.pct>=r.target?'😎':r.status==='risk'?'⚠️':'🚨'}</div>
+              <div>
+                <div className="result-title">{r.pct>=r.target?"You're Safe!":r.status==='risk'?'Risky Zone!':'Danger Zone!'}</div>
+                <div className="result-detail">
+                  {r.pct>=r.target
+                    ? `Bunk ${r.bunk} more class${r.bunk!==1?'es':''} safely`
+                    : `Attend ${r.need} class${r.need!==1?'es':''} to reach ${r.target}%`}
                 </div>
-              ) : res.status === 'risk' ? (
-                <div className="result-box result-risk" style={{width:'100%'}}>
-                  <div className="result-icon">⚠️</div>
-                  <div>
-                    <div className="result-title">Risky Zone!</div>
-                    <div className="result-detail">
-                      Attend next <strong>{res.need}</strong> consecutive class{res.need !== 1 ? 'es' : ''} to secure your {res.target}% target
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="result-box result-danger" style={{width:'100%'}}>
-                  <div className="result-icon">🚨</div>
-                  <div>
-                    <div className="result-title">Danger Zone!</div>
-                    <div className="result-detail">
-                      You need to attend <strong>{res.need}</strong> consecutive class{res.need !== 1 ? 'es' : ''} to reach {res.target}%
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="motivation" style={{width:'100%'}}>
-                {getMotivation(res.pct, res.target, res.bunk)}
               </div>
             </div>
-          )}
-        </div>
+            <div className="motivation" style={{width:'100%'}}>{motivate(r.pct,r.target,r.bunk)}</div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── SUBJECT CARD ─────────────────────────────────────────────────────────────
-function SubjectCard({ subject, onEdit, onDelete, target }) {
-  const pct = calcAttendance(subject.conducted, subject.attended);
-  const status = getStatus(pct, target);
-  const color = statusColor(status);
-  const bunk = classesCanBunk(subject.conducted, subject.attended, target);
-  const need = classesToAttend(subject.conducted, subject.attended, target);
-
+function SubjectCard({subject, onEdit, onDelete, target}) {
+  const pct=calcAtt(subject.conducted,subject.attended), st=getStatus(pct,target), color=sColor(st);
   return (
-    <div className={`glass subject-card ${status} animate-bounceIn`}>
+    <div className={`glass subject-card ${st}`} style={{animation:'bounceIn .35s ease'}}>
       <div className="subject-name">
-        <span>{subject.name}</span>
+        <span style={{flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',paddingRight:'8px'}}>{subject.name}</span>
         <div className="subject-actions">
-          <button onClick={() => onEdit(subject)} title="Edit">✏️</button>
-          <button onClick={() => onDelete(subject.id)} title="Delete">🗑️</button>
+          <button onClick={()=>onEdit(subject)}>✏️</button>
+          <button onClick={()=>onDelete(subject.id)}>🗑️</button>
         </div>
       </div>
-
       <div className="subject-stats">
-        <div className="subject-stat">
-          <div className="subject-stat-val" style={{color}}>{pct.toFixed(1)}%</div>
-          <div className="subject-stat-label">Attendance</div>
-        </div>
-        <div className="subject-stat">
-          <div className="subject-stat-val">{subject.attended}</div>
-          <div className="subject-stat-label">Attended</div>
-        </div>
-        <div className="subject-stat">
-          <div className="subject-stat-val">{subject.conducted}</div>
-          <div className="subject-stat-label">Total</div>
-        </div>
+        <div className="subject-stat"><div className="subject-stat-val" style={{color}}>{pct.toFixed(1)}%</div><div className="subject-stat-label">Attendance</div></div>
+        <div className="subject-stat"><div className="subject-stat-val">{subject.attended}</div><div className="subject-stat-label">Attended</div></div>
+        <div className="subject-stat"><div className="subject-stat-val">{subject.conducted}</div><div className="subject-stat-label">Total</div></div>
       </div>
-
-      <MiniBar pct={pct} target={target} />
-
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'14px'}}>
-        <span className={`badge badge-${status}`}>
-          {status === 'safe' ? '✅ Safe' : status === 'risk' ? '⚠️ Risk' : '🚨 Danger'}
-        </span>
-        <span style={{fontSize:'12px', color:'var(--text2)'}}>
-          {status !== 'danger' && pct >= target
-            ? `🎉 Bunk ${bunk} more`
-            : `📚 Need ${need} more`}
+      <MiniBar pct={pct} target={target}/>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'12px'}}>
+        <span className={`badge badge-${st}`}>{st==='safe'?'✅ Safe':st==='risk'?'⚠️ Risk':'🚨 Danger'}</span>
+        <span style={{fontSize:'12px',color:'var(--text2)'}}>
+          {pct>=target ? `🎉 Bunk ${canBunk(subject.conducted,subject.attended,target)}` : `📚 Need ${needAtt(subject.conducted,subject.attended,target)}`}
         </span>
       </div>
     </div>
   );
 }
 
-// ─── SUBJECTS PANEL ───────────────────────────────────────────────────────────
-function Subjects() {
-  const [subjects, setSubjects] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('bpp_subjects') || '[]'); } catch { return []; }
-  });
-  const [target] = useState(() => {
-    try { return +localStorage.getItem('bpp_target') || 75; } catch { return 75; }
-  });
-  const [showAdd, setShowAdd] = useState(false);
-  const [editModal, setEditModal] = useState(null);
-  const [form, setForm] = useState({ name:'', conducted:'', attended:'' });
-  const [formErrors, setFormErrors] = useState({});
+function Subjects({user}) {
+  const [subjects,setSubjects] = useState([]);
+  const [syncing,setSyncing]   = useState(true);
+  const TARGET = 75;
+  const [showAdd,setShowAdd]   = useState(false);
+  const [editModal,setEdit]    = useState(null);
+  const [form,setForm]         = useState({name:'',conducted:'',attended:''});
+  const [fErr,setFErr]         = useState({});
 
-  useEffect(() => {
-    localStorage.setItem('bpp_subjects', JSON.stringify(subjects));
-  }, [subjects]);
+  const col = (firebaseReady && user)
+    ? db.collection('users').doc(user.uid).collection('subjects')
+    : null;
 
-  function validateForm(f) {
-    const e = {};
-    if (!f.name.trim()) e.name = 'Subject name required';
-    if (!f.conducted || isNaN(f.conducted) || +f.conducted < 0) e.conducted = 'Invalid';
-    if (!f.attended  || isNaN(f.attended)  || +f.attended < 0)  e.attended  = 'Invalid';
-    if (!e.conducted && !e.attended && +f.attended > +f.conducted) e.attended = 'Too many';
+  useEffect(()=>{
+    if(!col){ setSyncing(false); return; }
+    setSyncing(true);
+    const unsub = col.orderBy('createdAt','asc').onSnapshot(
+      snap => { setSubjects(snap.docs.map(d=>({id:d.id,...d.data()}))); setSyncing(false); },
+      err  => { console.error(err); setSyncing(false); toast('Sync error!','error'); }
+    );
+    return ()=>unsub();
+  }, [user && user.uid]);
+
+  function vf(f) {
+    const e={};
+    if(!f.name.trim()) e.name='Name required';
+    if(!f.conducted||isNaN(f.conducted)||+f.conducted<0) e.conducted='Invalid';
+    if(!f.attended||isNaN(f.attended)||+f.attended<0)    e.attended='Invalid';
+    if(!e.conducted&&!e.attended&&+f.attended>+f.conducted) e.attended='Too many';
     return e;
   }
 
-  function handleAdd() {
-    const e = validateForm(form);
-    setFormErrors(e);
-    if (Object.keys(e).length) return;
-    const newSub = { id: Date.now(), name: form.name.trim(), conducted: +form.conducted, attended: +form.attended };
-    setSubjects(p => [...p, newSub]);
-    setForm({ name:'', conducted:'', attended:'' });
-    setShowAdd(false);
-    toast(`${newSub.name} added! 🎓`, 'success');
+  async function handleAdd() {
+    const e=vf(form); setFErr(e);
+    if(Object.keys(e).length) return;
+    await col.add({
+      name:form.name.trim(), conducted:+form.conducted, attended:+form.attended,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast(`${form.name} added! 🎓`,'success');
+    setForm({name:'',conducted:'',attended:''}); setShowAdd(false);
   }
 
-  function handleEditSave() {
-    const e = validateForm(editModal);
-    setFormErrors(e);
-    if (Object.keys(e).length) return;
-    setSubjects(p => p.map(s => s.id === editModal.id ? { ...s, ...editModal, conducted: +editModal.conducted, attended: +editModal.attended } : s));
-    setEditModal(null);
-    toast('Subject updated ✅', 'success');
+  async function handleEditSave() {
+    const e=vf(editModal); setFErr(e);
+    if(Object.keys(e).length) return;
+    await col.doc(editModal.id).update({
+      name:editModal.name.trim(), conducted:+editModal.conducted, attended:+editModal.attended
+    });
+    setEdit(null); toast('Updated! ✅','success');
   }
 
-  function handleDelete(id) {
-    const s = subjects.find(x => x.id === id);
-    setSubjects(p => p.filter(x => x.id !== id));
-    toast(`${s?.name} removed 🗑️`, 'error');
+  async function handleDelete(id) {
+    const s=subjects.find(x=>x.id===id);
+    await col.doc(id).delete();
+    toast(`${s?.name} removed 🗑️`,'error');
   }
 
-  // Trend bar data
-  const trendData = subjects.map(s => ({
-    name: s.name,
-    pct: calcAttendance(s.conducted, s.attended),
-    status: getStatus(calcAttendance(s.conducted, s.attended), target)
-  }));
+  const totC=subjects.reduce((s,x)=>s+x.conducted,0);
+  const totA=subjects.reduce((s,x)=>s+x.attended,0);
+  const oPct=calcAtt(totC,totA), oSt=getStatus(oPct,TARGET), oCol=sColor(oSt);
+  const oBnk=canBunk(totC,totA,TARGET), oNd=needAtt(totC,totA,TARGET);
 
-  // Overall attendance calculation (sum of all subjects)
-  const totalConducted = subjects.reduce((sum, s) => sum + s.conducted, 0);
-  const totalAttended  = subjects.reduce((sum, s) => sum + s.attended, 0);
-  const overallPct     = calcAttendance(totalConducted, totalAttended);
-  const overallStatus  = getStatus(overallPct, target);
-  const overallColor   = statusColor(overallStatus);
-  const overallBunk    = classesCanBunk(totalConducted, totalAttended, target);
-  const overallNeed    = classesToAttend(totalConducted, totalAttended, target);
+  if(syncing && subjects.length===0) return (
+    <div style={{textAlign:'center',padding:'72px 0',color:'var(--text3)'}}>
+      <div style={{fontSize:'40px',animation:'spin 1s linear infinite',marginBottom:'16px'}}>⏳</div>
+      <div>Loading from cloud...</div>
+    </div>
+  );
 
   return (
     <div>
-      {/* Summary stats */}
-      {subjects.length > 0 && (
-        <>
-          {/* ── OVERALL ATTENDANCE BIG CARD ── */}
-          <div className="glass animate-fadeUp" style={{
-            padding:'24px 28px', marginBottom:'20px',
-            background:'linear-gradient(135deg, rgba(124,106,247,0.08), rgba(167,139,250,0.04))',
-            border:'1px solid rgba(124,106,247,0.2)'
-          }}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'16px'}}>
-              {/* Left — circular + label */}
-              <div style={{display:'flex', alignItems:'center', gap:'20px'}}>
-                <div style={{position:'relative', width:'80px', height:'80px', flexShrink:0}}>
-                  <svg style={{transform:'rotate(-90deg)'}} width="80" height="80" viewBox="0 0 80 80">
-                    <circle fill="none" stroke="var(--border)" strokeWidth="7" cx="40" cy="40" r="33"/>
-                    <circle
-                      fill="none" stroke={overallColor} strokeWidth="7" strokeLinecap="round"
-                      cx="40" cy="40" r="33"
-                      strokeDasharray={2*Math.PI*33}
-                      strokeDashoffset={2*Math.PI*33 - (Math.min(overallPct,100)/100)*2*Math.PI*33}
-                      style={{transition:'stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1), stroke 0.4s'}}
-                    />
-                  </svg>
-                  <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'}}>
-                    <div style={{fontFamily:'Syne,sans-serif',fontSize:'14px',fontWeight:'800',color:overallColor,lineHeight:1}}>{overallPct.toFixed(0)}%</div>
-                  </div>
-                </div>
+      {subjects.length>0 && <>
+        {/* OVERALL ATTENDANCE CARD */}
+        <div className="glass" style={{padding:'24px 28px',marginBottom:'20px',
+          background:'linear-gradient(135deg,rgba(124,106,247,.08),rgba(167,139,250,.04))',
+          border:'1px solid rgba(124,106,247,.2)',animation:'fadeUp .4s ease'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'18px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'20px'}}>
+              <Ring pct={oPct} target={TARGET} size={86} sw={7}/>
+              <div>
+                <div style={{fontSize:'11px',fontWeight:700,color:'var(--text3)',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:'4px'}}>Overall Attendance</div>
+                <div style={{fontFamily:'Syne,sans-serif',fontSize:'32px',fontWeight:800,color:oCol,lineHeight:1}}>{oPct.toFixed(1)}%</div>
+                <div style={{fontSize:'12px',color:'var(--text2)',marginTop:'5px'}}>{totA} / {totC} classes · {subjects.length} subject{subjects.length!==1?'s':''}</div>
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:'8px',minWidth:'170px'}}>
+              <div style={{padding:'12px 16px',borderRadius:'12px',
+                background:oPct>=TARGET?'var(--green-bg)':'var(--red-bg)',
+                border:`1px solid ${oPct>=TARGET?'rgba(52,211,153,.25)':'rgba(248,113,113,.25)'}`,
+                display:'flex',alignItems:'center',gap:'10px'}}>
+                <span style={{fontSize:'24px'}}>{oPct>=TARGET?'😎':'📚'}</span>
                 <div>
-                  <div style={{fontFamily:'Syne,sans-serif',fontSize:'11px',fontWeight:'700',color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:'4px'}}>Overall Attendance</div>
-                  <div style={{fontFamily:'Syne,sans-serif',fontSize:'28px',fontWeight:'800',color:overallColor,lineHeight:1}}>{overallPct.toFixed(1)}%</div>
-                  <div style={{fontSize:'12px',color:'var(--text2)',marginTop:'4px'}}>
-                    {totalAttended} / {totalConducted} classes across all subjects
+                  <div style={{fontSize:'10px',color:'var(--text2)',fontWeight:700,textTransform:'uppercase',letterSpacing:'.06em'}}>
+                    {oPct>=TARGET?'Can Bunk':'Must Attend'}
+                  </div>
+                  <div style={{fontFamily:'Syne,sans-serif',fontSize:'22px',fontWeight:800,color:oPct>=TARGET?'var(--green)':'var(--red)',lineHeight:1.1}}>
+                    {oPct>=TARGET ? `${oBnk} classes` : `${oNd} classes`}
                   </div>
                 </div>
               </div>
-
-              {/* Right — bunk/need info */}
-              <div style={{display:'flex', flexDirection:'column', gap:'8px', minWidth:'180px'}}>
-                <div style={{
-                  padding:'10px 14px', borderRadius:'10px',
-                  background: overallPct >= target ? 'var(--green-bg)' : 'var(--red-bg)',
-                  border: `1px solid ${overallPct >= target ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)'}`,
-                  display:'flex', alignItems:'center', gap:'8px'
-                }}>
-                  <span style={{fontSize:'20px'}}>{overallPct >= target ? '😎' : '📚'}</span>
-                  <div>
-                    <div style={{fontSize:'11px',color:'var(--text2)',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.05em'}}>
-                      {overallPct >= target ? 'Can Bunk' : 'Must Attend'}
-                    </div>
-                    <div style={{fontFamily:'Syne,sans-serif',fontSize:'18px',fontWeight:'800',color: overallPct >= target ? 'var(--green)' : 'var(--red)'}}>
-                      {overallPct >= target ? `${overallBunk} classes` : `${overallNeed} classes`}
-                    </div>
-                  </div>
-                </div>
-                <span className={`badge badge-${overallStatus}`} style={{alignSelf:'flex-start',fontSize:'12px',padding:'4px 12px'}}>
-                  {overallStatus === 'safe' ? '✅ Overall Safe' : overallStatus === 'risk' ? '⚠️ Overall Risk' : '🚨 Overall Danger'}
-                </span>
-              </div>
-            </div>
-
-            {/* Mini overall bar */}
-            <div style={{marginTop:'16px'}}>
-              <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'var(--text2)',marginBottom:'5px',fontWeight:'500'}}>
-                <span>0%</span>
-                <span style={{color:overallColor}}>● {overallPct.toFixed(1)}%</span>
-                <span>100%</span>
-              </div>
-              <div style={{height:'8px',background:'var(--surface2)',borderRadius:'4px',overflow:'hidden',position:'relative'}}>
-                <div style={{height:'100%',width:`${Math.min(overallPct,100)}%`,background:overallColor,borderRadius:'4px',transition:'width 0.8s cubic-bezier(0.34,1.56,0.64,1)'}}/>
-                {/* target marker */}
-                <div style={{position:'absolute',top:0,bottom:0,left:`${target}%`,width:'2px',background:'var(--text3)',borderRadius:'1px'}}/>
-              </div>
-              <div style={{textAlign:'center',fontSize:'10px',color:'var(--text3)',marginTop:'4px'}}>Target: {target}%</div>
+              <span className={`badge badge-${oSt}`} style={{alignSelf:'flex-start',padding:'4px 12px',fontSize:'12px'}}>
+                {oSt==='safe'?'✅ Overall Safe':oSt==='risk'?'⚠️ Overall Risk':'🚨 Overall Danger'}
+              </span>
             </div>
           </div>
-
-          {/* ── MINI STAT CARDS ── */}
-          <div className="stats-row" style={{marginBottom:'24px', gridTemplateColumns:'repeat(4,1fr)'}}>
-            <div className="glass stat-card" style={{animationDelay:'0.05s'}}>
-              <div className="stat-value" style={{color:'var(--accent2)'}}>{subjects.length}</div>
-              <div className="stat-label">Subjects</div>
+          <div style={{marginTop:'18px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'var(--text2)',marginBottom:'6px',fontWeight:500}}>
+              <span>0%</span><span style={{color:oCol}}>● {oPct.toFixed(1)}%</span><span>100%</span>
             </div>
-            <div className="glass stat-card" style={{animationDelay:'0.08s'}}>
-              <div className="stat-value" style={{color:'var(--text)'}}>{totalConducted}</div>
-              <div className="stat-label">Total Classes</div>
+            <div style={{height:'8px',background:'var(--surface2)',borderRadius:'4px',overflow:'hidden',position:'relative'}}>
+              <div style={{height:'100%',width:`${Math.min(oPct,100)}%`,background:oCol,borderRadius:'4px',transition:'width .8s cubic-bezier(0.34,1.56,0.64,1)'}}/>
+              <div style={{position:'absolute',top:0,bottom:0,left:`${TARGET}%`,width:'2px',background:'rgba(255,255,255,.3)',borderRadius:'1px'}}/>
             </div>
-            <div className="glass stat-card" style={{animationDelay:'0.11s'}}>
-              <div className="stat-value" style={{color:'var(--green)'}}>
-                {subjects.filter(s => getStatus(calcAttendance(s.conducted, s.attended), target) === 'safe').length}
-              </div>
-              <div className="stat-label">Safe</div>
-            </div>
-            <div className="glass stat-card" style={{animationDelay:'0.14s'}}>
-              <div className="stat-value" style={{color:'var(--red)'}}>
-                {subjects.filter(s => getStatus(calcAttendance(s.conducted, s.attended), target) === 'danger').length}
-              </div>
-              <div className="stat-label">Danger</div>
-            </div>
+            <div style={{textAlign:'center',fontSize:'10px',color:'var(--text3)',marginTop:'5px'}}>Target: {TARGET}%</div>
           </div>
-
-          {/* Trend visualization */}
-          {subjects.length >= 2 && (
-            <div className="glass trend-wrap animate-fadeUp" style={{marginBottom:'24px'}}>
-              <div className="section-title" style={{marginBottom:'8px'}}>
-                <span>📈</span> Attendance Overview
-              </div>
-              <div className="trend-bars">
-                {trendData.map((d, i) => (
-                  <div key={i} className="trend-bar-col">
-                    <div className="trend-bar-pct" style={{color: statusColor(d.status)}}>{d.pct.toFixed(0)}%</div>
-                    <div
-                      className="trend-bar"
-                      style={{
-                        height: `${(d.pct / 100) * 80}%`,
-                        background: `linear-gradient(to top, ${statusColor(d.status)}88, ${statusColor(d.status)})`
-                      }}
-                      title={`${d.name}: ${d.pct.toFixed(1)}%`}
-                    />
-                    <div className="trend-bar-name">{d.name}</div>
-                  </div>
-                ))}
-                {/* Target line indicator */}
-              </div>
-              <div style={{display:'flex', justifyContent:'center', marginTop:'8px'}}>
-                <span style={{fontSize:'11px', color:'var(--text3)'}}>Target: {target}% • Hover bars for details</span>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Header */}
-      <div className="subjects-header">
-        <div className="section-title" style={{margin:0}}>
-          <span>📚</span> My Subjects
+          <div className="motivation" style={{marginTop:'14px'}}>{motivate(oPct,TARGET,oBnk)}</div>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAdd(p => !p)}>
+
+        {/* MINI STATS */}
+        <div className="stats-row" style={{gridTemplateColumns:'repeat(4,1fr)'}}>
+          {[
+            {v:subjects.length, l:'Subjects', c:'var(--accent2)'},
+            {v:totC, l:'Total Classes', c:'var(--text)'},
+            {v:subjects.filter(s=>getStatus(calcAtt(s.conducted,s.attended),TARGET)==='safe').length, l:'Safe', c:'var(--green)'},
+            {v:subjects.filter(s=>getStatus(calcAtt(s.conducted,s.attended),TARGET)==='danger').length, l:'Danger', c:'var(--red)'},
+          ].map((x,i)=>(
+            <div key={i} className="glass stat-card" style={{animationDelay:`${i*.06}s`}}>
+              <div className="stat-value" style={{color:x.c}}>{x.v}</div>
+              <div className="stat-label">{x.l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CHART */}
+        {subjects.length>=2 && (
+          <div className="glass trend-wrap" style={{animation:'fadeUp .4s ease'}}>
+            <div className="section-title" style={{marginBottom:'8px'}}>📈 Subject-wise Chart</div>
+            <div className="trend-bars">
+              {subjects.map((s,i)=>{
+                const p=calcAtt(s.conducted,s.attended), st=getStatus(p,TARGET), col=sColor(st);
+                return (
+                  <div key={i} className="trend-bar-col">
+                    <div className="trend-bar-pct" style={{color:col}}>{p.toFixed(0)}%</div>
+                    <div className="trend-bar" style={{height:`${(p/100)*80}%`,background:`linear-gradient(to top,${col}77,${col})`}} title={`${s.name}: ${p.toFixed(1)}%`}/>
+                    <div className="trend-bar-name">{s.name}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{textAlign:'center',marginTop:'8px',fontSize:'11px',color:'var(--text3)'}}>Target: {TARGET}%</div>
+          </div>
+        )}
+      </>}
+
+      {/* HEADER */}
+      <div className="subjects-header">
+        <div>
+          <div className="section-title" style={{margin:0,marginBottom:'3px'}}>📚 My Subjects</div>
+          <div className="sync-label">
+            <span className={`sync-dot ${syncing?'syncing':''}`}/>
+            {syncing ? 'Syncing...' : '☁️ Synced across all devices'}
+          </div>
+        </div>
+        <button className="btn btn-primary" onClick={()=>setShowAdd(p=>!p)}>
           {showAdd ? '✕ Close' : '+ Add Subject'}
         </button>
       </div>
 
-      {/* Add form */}
+      {/* ADD FORM */}
       {showAdd && (
-        <div className="glass add-form animate-slideDown" style={{marginBottom:'20px'}}>
+        <div className="glass add-form" style={{marginBottom:'20px'}}>
           <div className="add-form-grid">
             <div className="input-wrap" style={{gridColumn:'1 / -1'}}>
               <label className="input-label">Subject Name</label>
-              <input className={`input ${formErrors.name ? 'error' : ''}`} placeholder="e.g. Data Structures"
-                value={form.name} onChange={e => { setForm(p => ({...p, name: e.target.value})); setFormErrors(p => ({...p, name:''})); }}
-              />
-              {formErrors.name && <span className="input-hint">{formErrors.name}</span>}
+              <input className={`input ${fErr.name?'error':''}`} placeholder="e.g. Data Structures"
+                value={form.name} onChange={e=>{setForm(p=>({...p,name:e.target.value}));setFErr(p=>({...p,name:''}))}}/>
+              {fErr.name && <span className="input-hint">{fErr.name}</span>}
             </div>
             <div className="input-wrap">
               <label className="input-label">Total Classes</label>
-              <input className={`input ${formErrors.conducted ? 'error' : ''}`} type="number" min="0" placeholder="40"
-                value={form.conducted} onChange={e => { setForm(p => ({...p, conducted: e.target.value})); setFormErrors(p => ({...p, conducted:''})); }}
-              />
-              {formErrors.conducted && <span className="input-hint">{formErrors.conducted}</span>}
+              <input className={`input ${fErr.conducted?'error':''}`} type="number" min="0" placeholder="40"
+                value={form.conducted} onChange={e=>{setForm(p=>({...p,conducted:e.target.value}));setFErr(p=>({...p,conducted:''}))}}/>
+              {fErr.conducted && <span className="input-hint">{fErr.conducted}</span>}
             </div>
             <div className="input-wrap">
               <label className="input-label">Classes Attended</label>
-              <input className={`input ${formErrors.attended ? 'error' : ''}`} type="number" min="0" placeholder="30"
-                value={form.attended} onChange={e => { setForm(p => ({...p, attended: e.target.value})); setFormErrors(p => ({...p, attended:''})); }}
-              />
-              {formErrors.attended && <span className="input-hint">{formErrors.attended}</span>}
+              <input className={`input ${fErr.attended?'error':''}`} type="number" min="0" placeholder="30"
+                value={form.attended} onChange={e=>{setForm(p=>({...p,attended:e.target.value}));setFErr(p=>({...p,attended:''}))}}/>
+              {fErr.attended && <span className="input-hint">{fErr.attended}</span>}
             </div>
           </div>
           <div className="add-form-footer">
-            <button className="btn btn-ghost" onClick={() => { setShowAdd(false); setFormErrors({}); }}>Cancel</button>
+            <button className="btn btn-ghost" onClick={()=>{setShowAdd(false);setFErr({})}}>Cancel</button>
             <button className="btn btn-primary" onClick={handleAdd}>Add Subject ✅</button>
           </div>
         </div>
       )}
 
-      {/* Grid */}
-      {subjects.length === 0 ? (
+      {/* GRID */}
+      {subjects.length===0 ? (
         <div className="glass empty-state">
           <div className="empty-icon">📋</div>
           <div className="empty-title">No subjects yet!</div>
-          <div className="empty-sub">Add your subjects to track attendance across all classes.</div>
-          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>+ Add Your First Subject</button>
+          <div className="empty-sub">Add subjects to start tracking.<br/>Data syncs instantly across all devices! ☁️</div>
+          <button className="btn btn-primary" onClick={()=>setShowAdd(true)}>+ Add Your First Subject</button>
         </div>
       ) : (
         <div className="subjects-grid">
-          {subjects.map((s, i) => (
-            <div key={s.id} style={{ animationDelay: `${i * 0.05}s` }}>
-              <SubjectCard subject={s} onEdit={setEditModal} onDelete={handleDelete} target={target} />
+          {subjects.map((s,i)=>(
+            <div key={s.id} style={{animationDelay:`${i*.05}s`}}>
+              <SubjectCard subject={s} onEdit={setEdit} onDelete={handleDelete} target={TARGET}/>
             </div>
           ))}
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* EDIT MODAL */}
       {editModal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditModal(null)}>
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setEdit(null)}>
           <div className="modal">
             <div className="modal-title">✏️ Edit Subject</div>
             <div className="inputs-stack">
               <div className="input-wrap">
                 <label className="input-label">Subject Name</label>
-                <input className={`input ${formErrors.name ? 'error' : ''}`}
-                  value={editModal.name}
-                  onChange={e => setEditModal(p => ({...p, name: e.target.value}))}
-                />
+                <input className="input" value={editModal.name} onChange={e=>setEdit(p=>({...p,name:e.target.value}))}/>
               </div>
               <div className="input-wrap">
                 <label className="input-label">Total Classes</label>
-                <input className={`input ${formErrors.conducted ? 'error' : ''}`} type="number" min="0"
-                  value={editModal.conducted}
-                  onChange={e => setEditModal(p => ({...p, conducted: e.target.value}))}
-                />
+                <input className="input" type="number" min="0" value={editModal.conducted} onChange={e=>setEdit(p=>({...p,conducted:e.target.value}))}/>
               </div>
               <div className="input-wrap">
                 <label className="input-label">Classes Attended</label>
-                <input className={`input ${formErrors.attended ? 'error' : ''}`} type="number" min="0"
-                  value={editModal.attended}
-                  onChange={e => setEditModal(p => ({...p, attended: e.target.value}))}
-                />
+                <input className="input" type="number" min="0" value={editModal.attended} onChange={e=>setEdit(p=>({...p,attended:e.target.value}))}/>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => { setEditModal(null); setFormErrors({}); }}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleEditSave}>Save Changes</button>
+              <button className="btn btn-ghost" onClick={()=>setEdit(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleEditSave}>Save Changes ✅</button>
             </div>
           </div>
         </div>
@@ -1047,91 +714,83 @@ function Subjects() {
   );
 }
 
-// ─── MAIN APP ─────────────────────────────────────────────────────────────────
 function App() {
-  const [dark, setDark] = useState(true);
-  const [tab, setTab] = useState('calc');
-  const [loading, setLoading] = useState(true);
+  const [user,setUser] = useState(undefined);
+  const [dark,setDark] = useState(true);
+  const [tab,setTab]   = useState('subjects');
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 900);
+  useEffect(()=>{
     const saved = localStorage.getItem('bpp_theme');
-    if (saved) setDark(saved === 'dark');
-  }, []);
+    if(saved) setDark(saved==='dark');
+    if(firebaseReady) {
+      const unsub = auth.onAuthStateChanged(u => setUser(u||null));
+      return ()=>unsub();
+    } else {
+      setUser(null);
+    }
+  },[]);
 
-  useEffect(() => {
+  useEffect(()=>{
     document.body.className = dark ? '' : 'light';
-    localStorage.setItem('bpp_theme', dark ? 'dark' : 'light');
-  }, [dark]);
+    localStorage.setItem('bpp_theme', dark?'dark':'light');
+  },[dark]);
 
-  if (loading) {
-    return (
-      <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'100vh', gap:'20px'}}>
-        <div style={{fontSize:'48px', animation:'spin 1s linear infinite'}}>⏳</div>
-        <div style={{fontFamily:'Syne,sans-serif', fontSize:'20px', fontWeight:'700', color:'var(--accent2)'}}>
-          Bunk Planner Pro
-        </div>
-        <div style={{display:'flex', gap:'8px'}}>
-          {[0,1,2].map(i => (
-            <div key={i} className="skeleton" style={{width:'8px', height:'8px', borderRadius:'50%', animation:`pulse 1.2s ease ${i*0.2}s infinite`}}/>
-          ))}
-        </div>
-      </div>
-    );
+  async function logout() {
+    await auth.signOut();
+    setUser(null);
+    toast('Logged out! Bye 👋','info');
   }
+
+  if(user===undefined) return (
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'100vh',gap:'20px'}}>
+      <div style={{fontSize:'52px',animation:'float 2s ease infinite'}}>🎓</div>
+      <div style={{fontFamily:'Syne,sans-serif',fontSize:'22px',fontWeight:800,color:'var(--accent2)'}}>BunkPlanner Pro</div>
+      <div style={{display:'flex',gap:'8px'}}>
+        {[0,1,2].map(i=>(
+          <div key={i} className="skeleton" style={{width:'9px',height:'9px',borderRadius:'50%',animation:`pulse 1.2s ease ${i*.2}s infinite`}}/>
+        ))}
+      </div>
+    </div>
+  );
+
+  if(!user) return <><AuthScreen onAuth={setUser}/><ToastContainer/></>;
+
+  const displayName = user.displayName || (user.email&&user.email.split('@')[0]) || 'Student';
+  const initials    = displayName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
 
   return (
     <div>
-      {/* NAV */}
       <nav className="nav">
-        <div className="nav-logo">
-          Bunk<span>Planner</span> Pro
-        </div>
-        <div className="nav-actions">
-          <button className="theme-toggle" onClick={() => setDark(p => !p)} title="Toggle theme">
-            {dark ? '☀️' : '🌙'}
-          </button>
+        <div className="nav-logo">Bunk<span>Planner</span> Pro</div>
+        <div className="nav-right">
+          <div className="nav-user">
+            <div className="nav-avatar">{initials}</div>
+            <span style={{maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{displayName}</span>
+          </div>
+          <button className="theme-toggle" onClick={()=>setDark(p=>!p)}>{dark?'☀️':'🌙'}</button>
+          <button className="btn btn-ghost" style={{padding:'7px 14px',fontSize:'13px'}} onClick={logout}>Logout</button>
         </div>
       </nav>
-
-      {/* MAIN */}
       <main className="main">
-        {/* HERO */}
         <div className="hero">
-          <div className="hero-badge">🎓 Made for KIET & Students Everywhere</div>
+          <div className="hero-badge">👋 Welcome, {displayName}!</div>
           <h1 className="hero-title">Bunk Smarter,<br/>Not Harder</h1>
-          <p className="hero-sub">
-            Know exactly how many classes you can skip — or how many you need to attend.
-            Stay in control, always. 😎
-          </p>
+          <p className="hero-sub">Data syncs real-time across all devices.<br/>Laptop pe add karo, phone pe dekho! ☁️</p>
         </div>
-
-        {/* TABS */}
         <div className="tabs">
-          <button className={`tab-btn ${tab === 'calc' ? 'active' : ''}`} onClick={() => setTab('calc')}>
-            🧮 Calculator
-          </button>
-          <button className={`tab-btn ${tab === 'subjects' ? 'active' : ''}`} onClick={() => setTab('subjects')}>
-            📚 My Subjects
-          </button>
+          <button className={`tab-btn ${tab==='subjects'?'active':''}`} onClick={()=>setTab('subjects')}>📚 My Subjects</button>
+          <button className={`tab-btn ${tab==='calc'?'active':''}`} onClick={()=>setTab('calc')}>🧮 Calculator</button>
         </div>
-
-        {/* CONTENT */}
-        {tab === 'calc' && <Calculator />}
-        {tab === 'subjects' && <Subjects />}
+        {tab==='subjects' && <Subjects user={user}/>}
+        {tab==='calc'     && <Calculator/>}
       </main>
-
-      {/* FOOTER */}
-      <footer className="footer">
-        Built with <span>❤️</span> for students — because bunk planning is a life skill.
-      </footer>
-
-      <ToastContainer />
+      <footer className="footer">Built with <span>❤️</span> for KIET students — bunk planning is a life skill 😎</footer>
+      <ToastContainer/>
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
