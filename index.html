@@ -741,18 +741,30 @@ function Subjects({user}) {
 // 🔥 IMPORT FEATURE
 function parseCyberVidyaData(text) {
   const subjects = [];
-  const regex = /([A-Z][A-Za-z\s\-]{3,50})[\s\S]*?(\d+)\s*\/\s*(\d+)/g;
-  let match;
 
-  while ((match = regex.exec(text)) !== null) {
-    const name = match[1].trim();
-    const attended = parseInt(match[2]);
-    const conducted = parseInt(match[3]);
+  const lines = text.split("\n");
 
-    if (conducted > 0 && attended <= conducted) {
-      subjects.push({ name, attended, conducted });
+  lines.forEach(line => {
+    const parts = line.trim().split(/\s+/);
+
+    // CyberVidya format: name + type + presents + special + lectures + %
+    if (parts.length >= 6) {
+
+      const name = parts.slice(0, -5).join(" "); // subject name
+
+      const presents = parseInt(parts[parts.length - 5]);
+      const special = parseInt(parts[parts.length - 4]);
+      const lectures = parseInt(parts[parts.length - 2]);
+
+      if (!isNaN(presents) && !isNaN(special) && !isNaN(lectures)) {
+        subjects.push({
+          name,
+          attended: presents + special,  // 🔥 MAIN FIX
+          conducted: lectures
+        });
+      }
     }
-  }
+  });
 
   return subjects;
 }
