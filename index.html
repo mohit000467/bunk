@@ -742,29 +742,34 @@ function Subjects({user}) {
 function parseCyberVidyaData(text) {
   const subjects = [];
 
-  const lines = text.split("\n");
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l !== "");
 
-  lines.forEach(line => {
-    const parts = line.trim().split(/\s+/);
+  for (let i = 0; i < lines.length; i++) {
 
-    // CyberVidya format: name + type + presents + special + lectures + %
-    if (parts.length >= 6) {
+    // find line which has numbers (attendance row)
+    if (/\d+\s+\d+\s+\d+\s+\d+%/.test(lines[i])) {
 
-      const name = parts.slice(0, -5).join(" "); // subject name
+      const numbers = lines[i].split(/\s+/);
 
-      const presents = parseInt(parts[parts.length - 5]);
-      const special = parseInt(parts[parts.length - 4]);
-      const lectures = parseInt(parts[parts.length - 2]);
+      const presents = parseInt(numbers[0]);
+      const special = parseInt(numbers[1]);
+      const lectures = parseInt(numbers[2]);
+
+      // subject name is 2 lines above usually
+      let name = lines[i - 2] || lines[i - 1];
+
+      // clean name (remove numbering like "2", "3")
+      name = name.replace(/^\d+\s*/, "").trim();
 
       if (!isNaN(presents) && !isNaN(special) && !isNaN(lectures)) {
         subjects.push({
           name,
-          attended: presents + special,  // 🔥 MAIN FIX
+          attended: presents + special,
           conducted: lectures
         });
       }
     }
-  });
+  }
 
   return subjects;
 }
