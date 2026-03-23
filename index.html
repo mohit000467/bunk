@@ -805,23 +805,110 @@ function Subjects() {
     status: getStatus(calcAttendance(s.conducted, s.attended), target)
   }));
 
+  // Overall attendance calculation (sum of all subjects)
+  const totalConducted = subjects.reduce((sum, s) => sum + s.conducted, 0);
+  const totalAttended  = subjects.reduce((sum, s) => sum + s.attended, 0);
+  const overallPct     = calcAttendance(totalConducted, totalAttended);
+  const overallStatus  = getStatus(overallPct, target);
+  const overallColor   = statusColor(overallStatus);
+  const overallBunk    = classesCanBunk(totalConducted, totalAttended, target);
+  const overallNeed    = classesToAttend(totalConducted, totalAttended, target);
+
   return (
     <div>
       {/* Summary stats */}
       {subjects.length > 0 && (
         <>
-          <div className="stats-row" style={{marginBottom:'24px'}}>
+          {/* ── OVERALL ATTENDANCE BIG CARD ── */}
+          <div className="glass animate-fadeUp" style={{
+            padding:'24px 28px', marginBottom:'20px',
+            background:'linear-gradient(135deg, rgba(124,106,247,0.08), rgba(167,139,250,0.04))',
+            border:'1px solid rgba(124,106,247,0.2)'
+          }}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'16px'}}>
+              {/* Left — circular + label */}
+              <div style={{display:'flex', alignItems:'center', gap:'20px'}}>
+                <div style={{position:'relative', width:'80px', height:'80px', flexShrink:0}}>
+                  <svg style={{transform:'rotate(-90deg)'}} width="80" height="80" viewBox="0 0 80 80">
+                    <circle fill="none" stroke="var(--border)" strokeWidth="7" cx="40" cy="40" r="33"/>
+                    <circle
+                      fill="none" stroke={overallColor} strokeWidth="7" strokeLinecap="round"
+                      cx="40" cy="40" r="33"
+                      strokeDasharray={2*Math.PI*33}
+                      strokeDashoffset={2*Math.PI*33 - (Math.min(overallPct,100)/100)*2*Math.PI*33}
+                      style={{transition:'stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1), stroke 0.4s'}}
+                    />
+                  </svg>
+                  <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'}}>
+                    <div style={{fontFamily:'Syne,sans-serif',fontSize:'14px',fontWeight:'800',color:overallColor,lineHeight:1}}>{overallPct.toFixed(0)}%</div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontFamily:'Syne,sans-serif',fontSize:'11px',fontWeight:'700',color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:'4px'}}>Overall Attendance</div>
+                  <div style={{fontFamily:'Syne,sans-serif',fontSize:'28px',fontWeight:'800',color:overallColor,lineHeight:1}}>{overallPct.toFixed(1)}%</div>
+                  <div style={{fontSize:'12px',color:'var(--text2)',marginTop:'4px'}}>
+                    {totalAttended} / {totalConducted} classes across all subjects
+                  </div>
+                </div>
+              </div>
+
+              {/* Right — bunk/need info */}
+              <div style={{display:'flex', flexDirection:'column', gap:'8px', minWidth:'180px'}}>
+                <div style={{
+                  padding:'10px 14px', borderRadius:'10px',
+                  background: overallPct >= target ? 'var(--green-bg)' : 'var(--red-bg)',
+                  border: `1px solid ${overallPct >= target ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)'}`,
+                  display:'flex', alignItems:'center', gap:'8px'
+                }}>
+                  <span style={{fontSize:'20px'}}>{overallPct >= target ? '😎' : '📚'}</span>
+                  <div>
+                    <div style={{fontSize:'11px',color:'var(--text2)',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.05em'}}>
+                      {overallPct >= target ? 'Can Bunk' : 'Must Attend'}
+                    </div>
+                    <div style={{fontFamily:'Syne,sans-serif',fontSize:'18px',fontWeight:'800',color: overallPct >= target ? 'var(--green)' : 'var(--red)'}}>
+                      {overallPct >= target ? `${overallBunk} classes` : `${overallNeed} classes`}
+                    </div>
+                  </div>
+                </div>
+                <span className={`badge badge-${overallStatus}`} style={{alignSelf:'flex-start',fontSize:'12px',padding:'4px 12px'}}>
+                  {overallStatus === 'safe' ? '✅ Overall Safe' : overallStatus === 'risk' ? '⚠️ Overall Risk' : '🚨 Overall Danger'}
+                </span>
+              </div>
+            </div>
+
+            {/* Mini overall bar */}
+            <div style={{marginTop:'16px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'var(--text2)',marginBottom:'5px',fontWeight:'500'}}>
+                <span>0%</span>
+                <span style={{color:overallColor}}>● {overallPct.toFixed(1)}%</span>
+                <span>100%</span>
+              </div>
+              <div style={{height:'8px',background:'var(--surface2)',borderRadius:'4px',overflow:'hidden',position:'relative'}}>
+                <div style={{height:'100%',width:`${Math.min(overallPct,100)}%`,background:overallColor,borderRadius:'4px',transition:'width 0.8s cubic-bezier(0.34,1.56,0.64,1)'}}/>
+                {/* target marker */}
+                <div style={{position:'absolute',top:0,bottom:0,left:`${target}%`,width:'2px',background:'var(--text3)',borderRadius:'1px'}}/>
+              </div>
+              <div style={{textAlign:'center',fontSize:'10px',color:'var(--text3)',marginTop:'4px'}}>Target: {target}%</div>
+            </div>
+          </div>
+
+          {/* ── MINI STAT CARDS ── */}
+          <div className="stats-row" style={{marginBottom:'24px', gridTemplateColumns:'repeat(4,1fr)'}}>
             <div className="glass stat-card" style={{animationDelay:'0.05s'}}>
               <div className="stat-value" style={{color:'var(--accent2)'}}>{subjects.length}</div>
               <div className="stat-label">Subjects</div>
             </div>
-            <div className="glass stat-card" style={{animationDelay:'0.1s'}}>
+            <div className="glass stat-card" style={{animationDelay:'0.08s'}}>
+              <div className="stat-value" style={{color:'var(--text)'}}>{totalConducted}</div>
+              <div className="stat-label">Total Classes</div>
+            </div>
+            <div className="glass stat-card" style={{animationDelay:'0.11s'}}>
               <div className="stat-value" style={{color:'var(--green)'}}>
                 {subjects.filter(s => getStatus(calcAttendance(s.conducted, s.attended), target) === 'safe').length}
               </div>
               <div className="stat-label">Safe</div>
             </div>
-            <div className="glass stat-card" style={{animationDelay:'0.15s'}}>
+            <div className="glass stat-card" style={{animationDelay:'0.14s'}}>
               <div className="stat-value" style={{color:'var(--red)'}}>
                 {subjects.filter(s => getStatus(calcAttendance(s.conducted, s.attended), target) === 'danger').length}
               </div>
