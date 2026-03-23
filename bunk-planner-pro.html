@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bunk Planner Pro 🎓</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #16161f;
+    --surface: rgba(255,255,255,0.04);
+    --surface2: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f8;
+    --text2: #9090aa;
+    --text3: #5a5a72;
+    --accent: #7c6af7;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --green-bg: rgba(52,211,153,0.1);
+    --yellow-bg: rgba(251,191,36,0.1);
+    --red-bg: rgba(248,113,113,0.1);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .light {
+    --bg: #f0f0f8;
+    --bg2: #e8e8f5;
+    --bg3: #ffffff;
+    --surface: rgba(0,0,0,0.03);
+    --surface2: rgba(0,0,0,0.06);
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #111118;
+    --text2: #555568;
+    --text3: #aaaacc;
+    --shadow: 0 8px 32px rgba(0,0,0,0.1);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.15);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+    overflow-x: hidden;
+  }
+
+  #root { min-height: 100vh; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes bounceIn {
+    0% { opacity:0; transform: scale(0.8); }
+    60% { transform: scale(1.05); }
+    100% { opacity:1; transform: scale(1); }
+  }
+  @keyframes slideDown {
+    from { opacity:0; transform: translateY(-10px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  @keyframes glow {
+    0%,100% { box-shadow: 0 0 20px rgba(124,106,247,0.2); }
+    50%      { box-shadow: 0 0 40px rgba(124,106,247,0.5); }
+  }
+  @keyframes neon-pulse {
+    0%,100% { text-shadow: 0 0 8px currentColor; }
+    50%      { text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
+  }
+
+  .animate-fadeUp  { animation: fadeUp 0.5s ease forwards; }
+  .animate-bounceIn { animation: bounceIn 0.4s ease forwards; }
+  .animate-slideDown { animation: slideDown 0.3s ease forwards; }
+
+  /* SKELETON */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+  }
+
+  /* GLASS CARD */
+  .glass {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .glass:hover { border-color: var(--border2); }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px; border-radius: var(--radius-sm); border: none;
+    font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px;
+    cursor: pointer; transition: all 0.18s; position: relative; overflow: hidden;
+  }
+  .btn::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(255,255,255,0); transition: background 0.15s;
+  }
+  .btn:hover::after { background: rgba(255,255,255,0.07); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    box-shadow: 0 4px 20px rgba(124,106,247,0.35);
+  }
+  .btn-primary:hover { box-shadow: 0 6px 28px rgba(124,106,247,0.55); transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: var(--surface); color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+  .btn-danger {
+    background: var(--red-bg); color: var(--red);
+    border: 1px solid rgba(248,113,113,0.2);
+  }
+  .btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+  /* INPUTS */
+  .input-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .input-label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: 0.05em; text-transform: uppercase; }
+  .input {
+    width: 100%; padding: 12px 14px; background: var(--surface);
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px;
+    transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+  }
+  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,106,247,0.15); }
+  .input::placeholder { color: var(--text3); }
+  .input.error { border-color: var(--red); box-shadow: 0 0 0 3px rgba(248,113,113,0.15); }
+  .input-hint { font-size: 11px; color: var(--red); margin-top: 2px; }
+
+  /* NAV */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,15,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: background 0.3s;
+  }
+  .light .nav { background: rgba(240,240,248,0.85); }
+  .nav-logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); }
+  .nav-logo span { color: var(--accent); }
+  .nav-actions { display: flex; align-items: center; gap: 10px; }
+
+  .theme-toggle {
+    width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--border);
+    background: var(--surface); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 18px; transition: all 0.2s;
+  }
+  .theme-toggle:hover { border-color: var(--accent); transform: rotate(20deg); }
+
+  /* MAIN LAYOUT */
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  @media (max-width: 600px) { .main { padding: 20px 16px; } }
+
+  /* HERO */
+  .hero { text-align: center; padding: 48px 0 40px; animation: fadeUp 0.6s ease; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, rgba(124,106,247,0.15), rgba(167,139,250,0.1));
+    border: 1px solid rgba(124,106,247,0.25);
+    color: var(--accent2); font-size: 12px; font-weight: 600;
+    padding: 5px 12px; border-radius: 100px; margin-bottom: 18px;
+    letter-spacing: 0.05em;
+  }
+  .hero-title {
+    font-family: 'Syne', sans-serif; font-size: clamp(32px, 6vw, 56px);
+    font-weight: 800; line-height: 1.1; margin-bottom: 14px;
+    background: linear-gradient(135deg, var(--text) 30%, var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub { font-size: 16px; color: var(--text2); max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+  @media (max-width: 480px) { .stats-row { grid-template-columns: 1fr; } }
+  .stat-card {
+    padding: 18px; text-align: center; animation: fadeUp 0.5s ease both;
+  }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--text2); margin-top: 4px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 28px; }
+  .tab-btn {
+    flex: 1; padding: 9px; border-radius: 8px; border: none;
+    background: transparent; color: var(--text2); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--bg3); color: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  /* CALCULATOR SECTION */
+  .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 700px) { .calc-grid { grid-template-columns: 1fr; } }
+
+  .calc-card { padding: 28px; }
+  .section-title {
+    font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+  }
+
+  .inputs-stack { display: flex; flex-direction: column; gap: 16px; }
+
+  /* CIRCULAR PROGRESS */
+  .circle-wrap { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .circle-container { position: relative; width: 180px; height: 180px; }
+  .circle-svg { transform: rotate(-90deg); }
+  .circle-bg { fill: none; stroke: var(--border); stroke-width: 10; }
+  .circle-fill {
+    fill: none; stroke-width: 10; stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1), stroke 0.4s;
+  }
+  .circle-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    text-align: center;
+  }
+  .circle-pct { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; }
+  .circle-label { font-size: 11px; color: var(--text2); margin-top: 3px; font-weight: 500; }
+
+  /* RESULT BOX */
+  .result-box {
+    padding: 18px 20px; border-radius: var(--radius-sm);
+    display: flex; align-items: flex-start; gap: 12px;
+    animation: bounceIn 0.4s ease;
+  }
+  .result-icon { font-size: 28px; flex-shrink: 0; }
+  .result-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .result-detail { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+  .result-safe  { background: var(--green-bg);  border: 1px solid rgba(52,211,153,0.2);  color: var(--green); }
+  .result-risk  { background: var(--yellow-bg); border: 1px solid rgba(251,191,36,0.2);  color: var(--yellow); }
+  .result-danger{ background: var(--red-bg);    border: 1px solid rgba(248,113,113,0.2); color: var(--red); }
+
+  /* MOTIVATION */
+  .motivation {
+    margin-top: 16px; padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(124,106,247,0.1), rgba(167,139,250,0.05));
+    border: 1px solid rgba(124,106,247,0.2); border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500; color: var(--accent2);
+    text-align: center; animation: slideDown 0.3s ease;
+  }
+
+  /* SUBJECTS */
+  .subjects-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .subjects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+  /* SUBJECT CARD */
+  .subject-card { padding: 22px; position: relative; overflow: hidden; }
+  .subject-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .subject-card.safe::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .subject-card.risk::before { background: linear-gradient(90deg, var(--yellow), transparent); }
+  .subject-card.danger::before { background: linear-gradient(90deg, var(--red), transparent); }
+
+  .subject-name {
+    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+    margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .subject-actions { display: flex; gap: 6px; }
+  .subject-actions button {
+    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; transition: all 0.15s; color: var(--text2);
+  }
+  .subject-actions button:hover { background: var(--surface2); color: var(--text); }
+
+  .subject-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .subject-stat { text-align: center; padding: 8px; background: var(--surface); border-radius: 8px; }
+  .subject-stat-val { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+  .subject-stat-label { font-size: 10px; color: var(--text2); margin-top: 2px; font-weight: 500; }
+
+  /* MINI PROGRESS */
+  .mini-bar-wrap { display: flex; flex-direction: column; gap: 5px; }
+  .mini-bar-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); font-weight: 500; }
+  .mini-bar-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+
+  /* BADGE */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  }
+  .badge-safe   { background: var(--green-bg);  color: var(--green);  border: 1px solid rgba(52,211,153,0.25); }
+  .badge-risk   { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251,191,36,0.25); }
+  .badge-danger { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(248,113,113,0.25); }
+
+  /* ADD SUBJECT FORM */
+  .add-form { padding: 24px; animation: slideDown 0.3s ease; }
+  .add-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .add-form-grid { grid-template-columns: 1fr 1fr; } }
+  .add-form-footer { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 60px 24px; }
+  .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .empty-sub { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+
+  /* TREND BARS */
+  .trend-wrap { padding: 24px; }
+  .trend-bars { display: flex; align-items: flex-end; gap: 8px; height: 100px; margin-top: 16px; }
+  .trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .trend-bar {
+    width: 100%; border-radius: 5px 5px 0 0;
+    transition: height 0.8s cubic-bezier(0.34,1.56,0.64,1);
+    min-height: 4px; position: relative;
+  }
+  .trend-bar:hover { filter: brightness(1.2); }
+  .trend-bar-pct { font-size: 10px; color: var(--text2); font-weight: 600; }
+  .trend-bar-name { font-size: 10px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 56px; text-align: center; }
+
+  /* LOADING SKELETON */
+  .sk-card { padding: 22px; }
+  .sk-line { height: 14px; border-radius: 7px; margin-bottom: 10px; }
+  .sk-line.short { width: 40%; }
+  .sk-line.med { width: 65%; }
+  .sk-circle { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px; }
+
+  /* TOASTS */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+  @media (max-width: 480px) { .toast-container { left: 16px; right: 16px; } }
+  .toast {
+    padding: 14px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 10px; max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    animation: bounceIn 0.35s ease;
+    border: 1px solid var(--border2);
+  }
+  .toast-success { background: #0a2016; color: var(--green); border-color: rgba(52,211,153,0.2); }
+  .toast-error   { background: #200a0a; color: var(--red);   border-color: rgba(248,113,113,0.2); }
+  .toast-info    { background: #0d0c1f; color: var(--accent2); border-color: rgba(124,106,247,0.2); }
+  .light .toast-success { background: #f0fdf8; }
+  .light .toast-error   { background: #fff5f5; }
+  .light .toast-info    { background: #f5f3ff; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 28px; max-width: 420px; width: 100%; animation: bounceIn 0.3s ease; }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+  /* FOOTER */
+  .footer { text-align: center; padding: 32px 24px 40px; color: var(--text3); font-size: 13px; }
+  .footer span { color: var(--accent); }
+
+  /* RESPONSIVE */
+  @media (max-width: 480px) {
+    .calc-grid, .subjects-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+    .stat-value { font-size: 22px; }
+  }
+
+  /* number input arrows hide */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function calcAttendance(conducted, attended) {
+  if (!conducted || conducted === 0) return 0;
+  return Math.round((attended / conducted) * 1000) / 10;
+}
+
+function classesCanBunk(conducted, attended, target) {
+  // attended / (conducted + x) = target/100 → solve for x (negative means bunk)
+  // attended / (conducted + x) >= target/100
+  // x <= (attended*100/target) - conducted
+  const max = Math.floor((attended * 100 / target) - conducted);
+  return max > 0 ? max : 0;
+}
+
+function classesToAttend(conducted, attended, target) {
+  // (attended + x) / (conducted + x) = target/100
+  // x = (target*conducted - 100*attended) / (100 - target)
+  if (target >= 100) return Infinity;
+  const x = Math.ceil((target * conducted - 100 * attended) / (100 - target));
+  return x > 0 ? x : 0;
+}
+
+function getStatus(pct, target) {
+  if (pct >= target + 5) return 'safe';
+  if (pct >= target) return 'safe';
+  if (pct >= target - 10) return 'risk';
+  return 'danger';
+}
+
+function statusColor(status) {
+  if (status === 'safe') return 'var(--green)';
+  if (status === 'risk') return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function getMotivation(pct, target, canBunk) {
+  if (pct === 0) return '📚 Pehle class toh le bhai...';
+  if (pct >= target + 20) return `😎 Bhai tu safe hai! ${canBunk} classes aur maar maar ke bunk kar!`;
+  if (pct >= target + 10) return `🎯 Solid attendance! Thoda aur bunk space hai — enjoy kar!`;
+  if (pct >= target) return `✅ Target par hai, careful rehna. Ek zyada bunk aur risk zone!`;
+  if (pct >= target - 10) return `⚠️ Bhai yaar, thoda risky ho raha hai. Classes attend kar warna short!`;
+  if (pct >= target - 20) return `😬 Danger zone mein aa gaya! Padh le warna short ho jayega 💀`;
+  return `🚨 Bhai SOS! Seriously attendance badhao — warna exam nahi de payega!`;
+}
+
+const MOTIVATIONS_SAFE  = ['😎','🎉','🔥','✅','👑'];
+const MOTIVATIONS_RISK  = ['⚠️','😬','👀','🫠'];
+const MOTIVATIONS_DANGER= ['🚨','💀','😰','📵'];
+
+// ─── TOAST SYSTEM ─────────────────────────────────────────────────────────────
+let toastId = 0;
+let addToastFn = null;
+function toast(msg, type = 'info') {
+  if (addToastFn) addToastFn({ id: ++toastId, msg, type });
+}
+
+function ToastContainer() {
+  const [toasts, setToasts] = useState([]);
+  addToastFn = (t) => {
+    setToasts(p => [...p, t]);
+    setTimeout(() => setToasts(p => p.filter(x => x.id !== t.id)), 3200);
+  };
+  const icons = { success: '✅', error: '❌', info: '💡' };
+  return (
+    <div className="toast-container">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast toast-${t.type}`}>
+          <span>{icons[t.type]}</span> {t.msg}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── CIRCULAR PROGRESS ────────────────────────────────────────────────────────
+function CircularProgress({ pct, target }) {
+  const r = 80, circ = 2 * Math.PI * r;
+  const status = getStatus(pct, target);
+  const color = statusColor(status);
+  const dashoffset = circ - (Math.min(pct, 100) / 100) * circ;
+
+  return (
+    <div className="circle-container">
+      <svg className="circle-svg" width="180" height="180" viewBox="0 0 180 180">
+        <circle className="circle-bg" cx="90" cy="90" r={r}/>
+        <circle
+          className="circle-fill"
+          cx="90" cy="90" r={r}
+          stroke={color}
+          strokeDasharray={circ}
+          strokeDashoffset={dashoffset}
+        />
+      </svg>
+      <div className="circle-text">
+        <div className="circle-pct" style={{ color }}>{pct.toFixed(1)}%</div>
+        <div className="circle-label">attendance</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MINI BAR ─────────────────────────────────────────────────────────────────
+function MiniBar({ pct, target }) {
+  const status = getStatus(pct, target);
+  const color = statusColor(status);
+  return (
+    <div className="mini-bar-wrap">
+      <div className="mini-bar-header">
+        <span>0%</span>
+        <span style={{color}}>●  {pct.toFixed(1)}%</span>
+        <span>100%</span>
+      </div>
+      <div className="mini-bar-track">
+        <div className="mini-bar-fill" style={{ width: `${Math.min(pct,100)}%`, background: color }}/>
+      </div>
+      <div className="mini-bar-header">
+        <span></span>
+        <span style={{color:'var(--text3)',fontSize:'10px'}}>Target: {target}%</span>
+        <span></span>
+      </div>
+    </div>
+  );
+}
+
+// ─── CALCULATOR PANEL ─────────────────────────────────────────────────────────
+function Calculator() {
+  const [conducted, setConducted] = useState('');
+  const [attended, setAttended]   = useState('');
+  const [target, setTarget]       = useState('75');
+  const [errors, setErrors]       = useState({});
+  const [result, setResult]       = useState(null);
+  const [loading, setLoading]     = useState(false);
+
+  function validate() {
+    const e = {};
+    if (!conducted || isNaN(conducted) || +conducted < 0) e.conducted = 'Enter a valid number';
+    if (!attended  || isNaN(attended)  || +attended < 0)  e.attended  = 'Enter a valid number';
+    if (!target    || isNaN(target)    || +target < 1 || +target > 100) e.target = '1–100 only';
+    if (!e.conducted && !e.attended && +attended > +conducted) e.attended = 'Cannot exceed total classes';
+    return e;
+  }
+
+  function calculate() {
+    const e = validate();
+    setErrors(e);
+    if (Object.keys(e).length) return;
+    setLoading(true);
+    setTimeout(() => {
+      const c = +conducted, a = +attended, t = +target;
+      const pct = calcAttendance(c, a);
+      const status = getStatus(pct, t);
+      const bunk = classesCanBunk(c, a, t);
+      const need = classesToAttend(c, a, t);
+      setResult({ pct, status, bunk, need, target: t });
+      setLoading(false);
+    }, 600);
+  }
+
+  const res = result;
+
+  return (
+    <div>
+      <div className="calc-grid">
+        {/* LEFT — INPUTS */}
+        <div className="glass calc-card animate-fadeUp" style={{animationDelay:'0.1s'}}>
+          <div className="section-title">
+            <span>🧮</span> Calculator
+          </div>
+          <div className="inputs-stack">
+            <div className="input-wrap">
+              <label className="input-label">Total Classes Conducted</label>
+              <input
+                className={`input ${errors.conducted ? 'error' : ''}`}
+                type="number" min="0" placeholder="e.g. 40"
+                value={conducted}
+                onChange={e => { setConducted(e.target.value); setErrors(p => ({...p, conducted: ''})); }}
+              />
+              {errors.conducted && <span className="input-hint">{errors.conducted}</span>}
+            </div>
+
+            <div className="input-wrap">
+              <label className="input-label">Classes Attended</label>
+              <input
+                className={`input ${errors.attended ? 'error' : ''}`}
+                type="number" min="0" placeholder="e.g. 30"
+                value={attended}
+                onChange={e => { setAttended(e.target.value); setErrors(p => ({...p, attended: ''})); }}
+              />
+              {errors.attended && <span className="input-hint">{errors.attended}</span>}
+            </div>
+
+            <div className="input-wrap">
+              <label className="input-label">Target Attendance %</label>
+              <input
+                className={`input ${errors.target ? 'error' : ''}`}
+                type="number" min="1" max="100" placeholder="75"
+                value={target}
+                onChange={e => { setTarget(e.target.value); setErrors(p => ({...p, target: ''})); }}
+              />
+              {errors.target && <span className="input-hint">{errors.target}</span>}
+            </div>
+
+            <button className="btn btn-primary" style={{width:'100%', padding:'13px'}} onClick={calculate}>
+              {loading ? <span style={{animation:'spin 0.7s linear infinite',display:'inline-block'}}>⏳</span> : '⚡'}
+              {loading ? ' Calculating...' : ' Calculate Now'}
+            </button>
+          </div>
+        </div>
+
+        {/* RIGHT — RESULT */}
+        <div className="glass calc-card animate-fadeUp" style={{animationDelay:'0.2s'}}>
+          <div className="section-title">
+            <span>📊</span> Analysis
+          </div>
+
+          {loading && (
+            <div className="sk-card" style={{padding:0}}>
+              <div className="sk-circle skeleton"></div>
+              <div className="sk-line skeleton med"></div>
+              <div className="sk-line skeleton short"></div>
+            </div>
+          )}
+
+          {!loading && !res && (
+            <div style={{textAlign:'center', padding:'32px 0', color:'var(--text3)'}}>
+              <div style={{fontSize:'48px',marginBottom:'12px'}}>📐</div>
+              <div style={{fontSize:'14px'}}>Enter values and hit Calculate</div>
+            </div>
+          )}
+
+          {!loading && res && (
+            <div className="circle-wrap">
+              <CircularProgress pct={res.pct} target={res.target} />
+
+              <MiniBar pct={res.pct} target={res.target} />
+
+              {res.status !== 'danger' && res.pct >= res.target ? (
+                <div className="result-box result-safe" style={{width:'100%'}}>
+                  <div className="result-icon">😎</div>
+                  <div>
+                    <div className="result-title">You're Safe!</div>
+                    <div className="result-detail">
+                      You can bunk <strong>{res.bunk}</strong> more class{res.bunk !== 1 ? 'es' : ''} without falling below {res.target}%
+                    </div>
+                  </div>
+                </div>
+              ) : res.status === 'risk' ? (
+                <div className="result-box result-risk" style={{width:'100%'}}>
+                  <div className="result-icon">⚠️</div>
+                  <div>
+                    <div className="result-title">Risky Zone!</div>
+                    <div className="result-detail">
+                      Attend next <strong>{res.need}</strong> consecutive class{res.need !== 1 ? 'es' : ''} to secure your {res.target}% target
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="result-box result-danger" style={{width:'100%'}}>
+                  <div className="result-icon">🚨</div>
+                  <div>
+                    <div className="result-title">Danger Zone!</div>
+                    <div className="result-detail">
+                      You need to attend <strong>{res.need}</strong> consecutive class{res.need !== 1 ? 'es' : ''} to reach {res.target}%
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="motivation" style={{width:'100%'}}>
+                {getMotivation(res.pct, res.target, res.bunk)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SUBJECT CARD ─────────────────────────────────────────────────────────────
+function SubjectCard({ subject, onEdit, onDelete, target }) {
+  const pct = calcAttendance(subject.conducted, subject.attended);
+  const status = getStatus(pct, target);
+  const color = statusColor(status);
+  const bunk = classesCanBunk(subject.conducted, subject.attended, target);
+  const need = classesToAttend(subject.conducted, subject.attended, target);
+
+  return (
+    <div className={`glass subject-card ${status} animate-bounceIn`}>
+      <div className="subject-name">
+        <span>{subject.name}</span>
+        <div className="subject-actions">
+          <button onClick={() => onEdit(subject)} title="Edit">✏️</button>
+          <button onClick={() => onDelete(subject.id)} title="Delete">🗑️</button>
+        </div>
+      </div>
+
+      <div className="subject-stats">
+        <div className="subject-stat">
+          <div className="subject-stat-val" style={{color}}>{pct.toFixed(1)}%</div>
+          <div className="subject-stat-label">Attendance</div>
+        </div>
+        <div className="subject-stat">
+          <div className="subject-stat-val">{subject.attended}</div>
+          <div className="subject-stat-label">Attended</div>
+        </div>
+        <div className="subject-stat">
+          <div className="subject-stat-val">{subject.conducted}</div>
+          <div className="subject-stat-label">Total</div>
+        </div>
+      </div>
+
+      <MiniBar pct={pct} target={target} />
+
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'14px'}}>
+        <span className={`badge badge-${status}`}>
+          {status === 'safe' ? '✅ Safe' : status === 'risk' ? '⚠️ Risk' : '🚨 Danger'}
+        </span>
+        <span style={{fontSize:'12px', color:'var(--text2)'}}>
+          {status !== 'danger' && pct >= target
+            ? `🎉 Bunk ${bunk} more`
+            : `📚 Need ${need} more`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── SUBJECTS PANEL ───────────────────────────────────────────────────────────
+function Subjects() {
+  const [subjects, setSubjects] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('bpp_subjects') || '[]'); } catch { return []; }
+  });
+  const [target] = useState(() => {
+    try { return +localStorage.getItem('bpp_target') || 75; } catch { return 75; }
+  });
+  const [showAdd, setShowAdd] = useState(false);
+  const [editModal, setEditModal] = useState(null);
+  const [form, setForm] = useState({ name:'', conducted:'', attended:'' });
+  const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    localStorage.setItem('bpp_subjects', JSON.stringify(subjects));
+  }, [subjects]);
+
+  function validateForm(f) {
+    const e = {};
+    if (!f.name.trim()) e.name = 'Subject name required';
+    if (!f.conducted || isNaN(f.conducted) || +f.conducted < 0) e.conducted = 'Invalid';
+    if (!f.attended  || isNaN(f.attended)  || +f.attended < 0)  e.attended  = 'Invalid';
+    if (!e.conducted && !e.attended && +f.attended > +f.conducted) e.attended = 'Too many';
+    return e;
+  }
+
+  function handleAdd() {
+    const e = validateForm(form);
+    setFormErrors(e);
+    if (Object.keys(e).length) return;
+    const newSub = { id: Date.now(), name: form.name.trim(), conducted: +form.conducted, attended: +form.attended };
+    setSubjects(p => [...p, newSub]);
+    setForm({ name:'', conducted:'', attended:'' });
+    setShowAdd(false);
+    toast(`${newSub.name} added! 🎓`, 'success');
+  }
+
+  function handleEditSave() {
+    const e = validateForm(editModal);
+    setFormErrors(e);
+    if (Object.keys(e).length) return;
+    setSubjects(p => p.map(s => s.id === editModal.id ? { ...s, ...editModal, conducted: +editModal.conducted, attended: +editModal.attended } : s));
+    setEditModal(null);
+    toast('Subject updated ✅', 'success');
+  }
+
+  function handleDelete(id) {
+    const s = subjects.find(x => x.id === id);
+    setSubjects(p => p.filter(x => x.id !== id));
+    toast(`${s?.name} removed 🗑️`, 'error');
+  }
+
+  // Trend bar data
+  const trendData = subjects.map(s => ({
+    name: s.name,
+    pct: calcAttendance(s.conducted, s.attended),
+    status: getStatus(calcAttendance(s.conducted, s.attended), target)
+  }));
+
+  return (
+    <div>
+      {/* Summary stats */}
+      {subjects.length > 0 && (
+        <>
+          <div className="stats-row" style={{marginBottom:'24px'}}>
+            <div className="glass stat-card" style={{animationDelay:'0.05s'}}>
+              <div className="stat-value" style={{color:'var(--accent2)'}}>{subjects.length}</div>
+              <div className="stat-label">Subjects</div>
+            </div>
+            <div className="glass stat-card" style={{animationDelay:'0.1s'}}>
+              <div className="stat-value" style={{color:'var(--green)'}}>
+                {subjects.filter(s => getStatus(calcAttendance(s.conducted, s.attended), target) === 'safe').length}
+              </div>
+              <div className="stat-label">Safe</div>
+            </div>
+            <div className="glass stat-card" style={{animationDelay:'0.15s'}}>
+              <div className="stat-value" style={{color:'var(--red)'}}>
+                {subjects.filter(s => getStatus(calcAttendance(s.conducted, s.attended), target) === 'danger').length}
+              </div>
+              <div className="stat-label">Danger</div>
+            </div>
+          </div>
+
+          {/* Trend visualization */}
+          {subjects.length >= 2 && (
+            <div className="glass trend-wrap animate-fadeUp" style={{marginBottom:'24px'}}>
+              <div className="section-title" style={{marginBottom:'8px'}}>
+                <span>📈</span> Attendance Overview
+              </div>
+              <div className="trend-bars">
+                {trendData.map((d, i) => (
+                  <div key={i} className="trend-bar-col">
+                    <div className="trend-bar-pct" style={{color: statusColor(d.status)}}>{d.pct.toFixed(0)}%</div>
+                    <div
+                      className="trend-bar"
+                      style={{
+                        height: `${(d.pct / 100) * 80}%`,
+                        background: `linear-gradient(to top, ${statusColor(d.status)}88, ${statusColor(d.status)})`
+                      }}
+                      title={`${d.name}: ${d.pct.toFixed(1)}%`}
+                    />
+                    <div className="trend-bar-name">{d.name}</div>
+                  </div>
+                ))}
+                {/* Target line indicator */}
+              </div>
+              <div style={{display:'flex', justifyContent:'center', marginTop:'8px'}}>
+                <span style={{fontSize:'11px', color:'var(--text3)'}}>Target: {target}% • Hover bars for details</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Header */}
+      <div className="subjects-header">
+        <div className="section-title" style={{margin:0}}>
+          <span>📚</span> My Subjects
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowAdd(p => !p)}>
+          {showAdd ? '✕ Close' : '+ Add Subject'}
+        </button>
+      </div>
+
+      {/* Add form */}
+      {showAdd && (
+        <div className="glass add-form animate-slideDown" style={{marginBottom:'20px'}}>
+          <div className="add-form-grid">
+            <div className="input-wrap" style={{gridColumn:'1 / -1'}}>
+              <label className="input-label">Subject Name</label>
+              <input className={`input ${formErrors.name ? 'error' : ''}`} placeholder="e.g. Data Structures"
+                value={form.name} onChange={e => { setForm(p => ({...p, name: e.target.value})); setFormErrors(p => ({...p, name:''})); }}
+              />
+              {formErrors.name && <span className="input-hint">{formErrors.name}</span>}
+            </div>
+            <div className="input-wrap">
+              <label className="input-label">Total Classes</label>
+              <input className={`input ${formErrors.conducted ? 'error' : ''}`} type="number" min="0" placeholder="40"
+                value={form.conducted} onChange={e => { setForm(p => ({...p, conducted: e.target.value})); setFormErrors(p => ({...p, conducted:''})); }}
+              />
+              {formErrors.conducted && <span className="input-hint">{formErrors.conducted}</span>}
+            </div>
+            <div className="input-wrap">
+              <label className="input-label">Classes Attended</label>
+              <input className={`input ${formErrors.attended ? 'error' : ''}`} type="number" min="0" placeholder="30"
+                value={form.attended} onChange={e => { setForm(p => ({...p, attended: e.target.value})); setFormErrors(p => ({...p, attended:''})); }}
+              />
+              {formErrors.attended && <span className="input-hint">{formErrors.attended}</span>}
+            </div>
+          </div>
+          <div className="add-form-footer">
+            <button className="btn btn-ghost" onClick={() => { setShowAdd(false); setFormErrors({}); }}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleAdd}>Add Subject ✅</button>
+          </div>
+        </div>
+      )}
+
+      {/* Grid */}
+      {subjects.length === 0 ? (
+        <div className="glass empty-state">
+          <div className="empty-icon">📋</div>
+          <div className="empty-title">No subjects yet!</div>
+          <div className="empty-sub">Add your subjects to track attendance across all classes.</div>
+          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>+ Add Your First Subject</button>
+        </div>
+      ) : (
+        <div className="subjects-grid">
+          {subjects.map((s, i) => (
+            <div key={s.id} style={{ animationDelay: `${i * 0.05}s` }}>
+              <SubjectCard subject={s} onEdit={setEditModal} onDelete={handleDelete} target={target} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditModal(null)}>
+          <div className="modal">
+            <div className="modal-title">✏️ Edit Subject</div>
+            <div className="inputs-stack">
+              <div className="input-wrap">
+                <label className="input-label">Subject Name</label>
+                <input className={`input ${formErrors.name ? 'error' : ''}`}
+                  value={editModal.name}
+                  onChange={e => setEditModal(p => ({...p, name: e.target.value}))}
+                />
+              </div>
+              <div className="input-wrap">
+                <label className="input-label">Total Classes</label>
+                <input className={`input ${formErrors.conducted ? 'error' : ''}`} type="number" min="0"
+                  value={editModal.conducted}
+                  onChange={e => setEditModal(p => ({...p, conducted: e.target.value}))}
+                />
+              </div>
+              <div className="input-wrap">
+                <label className="input-label">Classes Attended</label>
+                <input className={`input ${formErrors.attended ? 'error' : ''}`} type="number" min="0"
+                  value={editModal.attended}
+                  onChange={e => setEditModal(p => ({...p, attended: e.target.value}))}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => { setEditModal(null); setFormErrors({}); }}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleEditSave}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+function App() {
+  const [dark, setDark] = useState(true);
+  const [tab, setTab] = useState('calc');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 900);
+    const saved = localStorage.getItem('bpp_theme');
+    if (saved) setDark(saved === 'dark');
+  }, []);
+
+  useEffect(() => {
+    document.body.className = dark ? '' : 'light';
+    localStorage.setItem('bpp_theme', dark ? 'dark' : 'light');
+  }, [dark]);
+
+  if (loading) {
+    return (
+      <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'100vh', gap:'20px'}}>
+        <div style={{fontSize:'48px', animation:'spin 1s linear infinite'}}>⏳</div>
+        <div style={{fontFamily:'Syne,sans-serif', fontSize:'20px', fontWeight:'700', color:'var(--accent2)'}}>
+          Bunk Planner Pro
+        </div>
+        <div style={{display:'flex', gap:'8px'}}>
+          {[0,1,2].map(i => (
+            <div key={i} className="skeleton" style={{width:'8px', height:'8px', borderRadius:'50%', animation:`pulse 1.2s ease ${i*0.2}s infinite`}}/>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* NAV */}
+      <nav className="nav">
+        <div className="nav-logo">
+          Bunk<span>Planner</span> Pro
+        </div>
+        <div className="nav-actions">
+          <button className="theme-toggle" onClick={() => setDark(p => !p)} title="Toggle theme">
+            {dark ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </nav>
+
+      {/* MAIN */}
+      <main className="main">
+        {/* HERO */}
+        <div className="hero">
+          <div className="hero-badge">🎓 Made for KIET & Students Everywhere</div>
+          <h1 className="hero-title">Bunk Smarter,<br/>Not Harder</h1>
+          <p className="hero-sub">
+            Know exactly how many classes you can skip — or how many you need to attend.
+            Stay in control, always. 😎
+          </p>
+        </div>
+
+        {/* TABS */}
+        <div className="tabs">
+          <button className={`tab-btn ${tab === 'calc' ? 'active' : ''}`} onClick={() => setTab('calc')}>
+            🧮 Calculator
+          </button>
+          <button className={`tab-btn ${tab === 'subjects' ? 'active' : ''}`} onClick={() => setTab('subjects')}>
+            📚 My Subjects
+          </button>
+        </div>
+
+        {/* CONTENT */}
+        {tab === 'calc' && <Calculator />}
+        {tab === 'subjects' && <Subjects />}
+      </main>
+
+      {/* FOOTER */}
+      <footer className="footer">
+        Built with <span>❤️</span> for students — because bunk planning is a life skill.
+      </footer>
+
+      <ToastContainer />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
