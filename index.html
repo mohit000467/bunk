@@ -742,26 +742,36 @@ function Subjects({user}) {
 function parseCyberVidyaData(text) {
   const subjects = [];
 
-  const lines = text.split("\n").map(l => l.trim()).filter(l => l !== "");
+  const lines = text
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => l !== "");
 
-  for (let i = 0; i < lines.length; i++) {
+  lines.forEach(line => {
 
-    // find line which has numbers (attendance row)
-    if (/\d+\s+\d+\s+\d+\s+\d+%/.test(lines[i])) {
+    // detect lines starting with number (subject rows)
+    if (/^\d+/.test(line)) {
 
-      const numbers = lines[i].split(/\s+/);
+      const parts = line.split(/\s+/);
 
-      const presents = parseInt(numbers[0]);
-      const special = parseInt(numbers[1]);
-      const lectures = parseInt(numbers[2]);
-
-      // subject name is 2 lines above usually
-      let name = lines[i - 2] || lines[i - 1];
-
-      // clean name (remove numbering like "2", "3")
-      name = name.replace(/^\d+\s*/, "").trim();
+      // last 4 values = presents special lectures %
+      const presents = parseInt(parts[parts.length - 4]);
+      const special = parseInt(parts[parts.length - 3]);
+      const lectures = parseInt(parts[parts.length - 2]);
 
       if (!isNaN(presents) && !isNaN(special) && !isNaN(lectures)) {
+
+        // remove first number
+        let nameParts = parts.slice(1, parts.length - 5);
+
+        let name = nameParts.join(" ");
+
+        // 🔥 CLEAN NAME
+        name = name
+          .replace(/BLENDED|THEORY|PRACTICAL/g, "")
+          .replace(/CS\d+[A-Z]?-.*/g, "")
+          .trim();
+
         subjects.push({
           name,
           attended: presents + special,
@@ -769,7 +779,7 @@ function parseCyberVidyaData(text) {
         });
       }
     }
-  }
+  });
 
   return subjects;
 }
