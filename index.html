@@ -742,44 +742,30 @@ function Subjects({user}) {
 function parseCyberVidyaData(text) {
   const subjects = [];
 
-  const lines = text
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l !== "");
+  // normalize everything into one line
+  const cleanText = text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
-  lines.forEach(line => {
+  // match pattern: subject + presents + special + lectures + %
+  const regex = /(\d+\s+)?([A-Za-z&\-\s\.]+?)\s+(BLENDED|THEORY|PRACTICAL)\s+.*?\s(\d+)\s+(\d+)\s+(\d+)\s+\d+%/g;
 
-    // detect lines starting with number (subject rows)
-    if (/^\d+/.test(line)) {
+  let match;
 
-      const parts = line.split(/\s+/);
+  while ((match = regex.exec(cleanText)) !== null) {
+    let name = match[2].trim();
 
-      // last 4 values = presents special lectures %
-      const presents = parseInt(parts[parts.length - 4]);
-      const special = parseInt(parts[parts.length - 3]);
-      const lectures = parseInt(parts[parts.length - 2]);
+    const presents = parseInt(match[4]);
+    const special = parseInt(match[5]);
+    const lectures = parseInt(match[6]);
 
-      if (!isNaN(presents) && !isNaN(special) && !isNaN(lectures)) {
+    // clean subject name
+    name = name.replace(/\.\.\./g, "").trim();
 
-        // remove first number
-        let nameParts = parts.slice(1, parts.length - 5);
-
-        let name = nameParts.join(" ");
-
-        // 🔥 CLEAN NAME
-        name = name
-          .replace(/BLENDED|THEORY|PRACTICAL/g, "")
-          .replace(/CS\d+[A-Z]?-.*/g, "")
-          .trim();
-
-        subjects.push({
-          name,
-          attended: presents + special,
-          conducted: lectures
-        });
-      }
-    }
-  });
+    subjects.push({
+      name,
+      attended: presents + special,
+      conducted: lectures
+    });
+  }
 
   return subjects;
 }
