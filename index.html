@@ -1342,6 +1342,24 @@ function App() {
     toast('Logged out! Bye 👋','info');
   }
 
+  const [clearConfirm, setClearConfirm] = React.useState(false);
+
+  async function clearAllSubjects() {
+    if (!col) return;
+    try {
+      const snap = await col.get();
+      if (snap.empty) { toast('Koi subject nahi hai abhi!', 'error'); setClearConfirm(false); return; }
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      toast('\uD83D\uDDD1\uFE0F Saare ' + snap.size + ' subjects delete ho gaye!', 'error');
+      setClearConfirm(false);
+    } catch(e) {
+      toast('Delete failed: ' + e.message, 'error');
+      setClearConfirm(false);
+    }
+  }
+
   if(user===undefined) return (
     <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'100vh',gap:'20px'}}>
       <div style={{fontSize:'52px',animation:'float 2s ease infinite'}}>🎓</div>
@@ -1377,9 +1395,43 @@ function App() {
             <span style={{maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{displayName}</span>
           </div>
           <button className="theme-toggle" onClick={()=>setDark(p=>!p)}>{dark?'☀️':'🌙'}</button>
+          <button
+            className="btn btn-ghost"
+            style={{padding:'7px 14px',fontSize:'13px',color:'var(--red)',border:'1px solid rgba(248,113,113,0.25)',background:'var(--red-bg)'}}
+            onClick={()=>setClearConfirm(true)}
+            title="Saare subjects delete karo"
+          >🗑️ Clear All</button>
           <button className="btn btn-ghost" style={{padding:'7px 14px',fontSize:'13px'}} onClick={logout}>Logout</button>
         </div>
       </nav>
+
+      {/* ── CLEAR ALL CONFIRM MODAL ── */}
+      {clearConfirm && (
+        <div className="modal-overlay" onClick={()=>setClearConfirm(false)}>
+          <div className="modal" style={{maxWidth:'380px',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:'52px',marginBottom:'12px'}}>🗑️</div>
+            <div style={{fontFamily:'Syne,sans-serif',fontSize:'20px',fontWeight:800,color:'var(--red)',marginBottom:'8px'}}>
+              Saare Subjects Delete Karein?
+            </div>
+            <div style={{fontSize:'13px',color:'var(--text2)',lineHeight:'1.7',marginBottom:'24px'}}>
+              Ye action <strong style={{color:'var(--red)'}}>undo nahi ho sakta.</strong><br/>
+              Saare subjects permanently delete ho jayenge.
+            </div>
+            <div style={{display:'flex',gap:'12px'}}>
+              <button
+                className="btn btn-ghost"
+                style={{flex:1,fontSize:'14px'}}
+                onClick={()=>setClearConfirm(false)}
+              >Cancel</button>
+              <button
+                className="btn"
+                style={{flex:1,fontSize:'14px',background:'var(--red)',color:'white',border:'none'}}
+                onClick={clearAllSubjects}
+              >🗑️ Haan, Delete Karo</button>
+            </div>
+          </div>
+        </div>
+      )}
       {syncBanner && (
         <SyncBanner
           subjects={syncBanner.subjects}
