@@ -480,6 +480,22 @@ function Subjects({user}) {
     ? db.collection('users').doc(user.uid).collection('subjects')
     : null;
 
+  const [clearConfirm, setClearConfirm] = useState(false);
+
+  async function clearAllSubjects() {
+    if (!col) { toast('Firebase ready nahi hai!', 'error'); return; }
+    setClearConfirm(false);
+    try {
+      const snap = await col.get();
+      if (snap.empty) { toast('Koi subject nahi hai abhi!', 'error'); return; }
+      const count = snap.size;
+      await Promise.all(snap.docs.map(d => d.ref.delete()));
+      toast('\uD83D\uDDD1\uFE0F Saare ' + count + ' subjects delete ho gaye!', 'error');
+    } catch(e) {
+      toast('Delete failed: ' + e.message, 'error');
+    }
+  }
+
   useEffect(()=>{
     if(!col){ setSyncing(false); return; }
     setSyncing(true);
@@ -707,6 +723,45 @@ function Subjects({user}) {
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={()=>setEdit(null)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleEditSave}>Save Changes ✅</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CLEAR ALL BUTTON ── */}
+      {subjects.length > 0 && (
+        <div style={{textAlign:'center', marginTop:'8px', marginBottom:'24px'}}>
+          <button
+            onClick={()=>setClearConfirm(true)}
+            style={{
+              background:'none', border:'1px solid rgba(248,113,113,0.3)',
+              color:'var(--red)', borderRadius:'10px', padding:'8px 20px',
+              fontSize:'13px', fontWeight:600, cursor:'pointer',
+              fontFamily:'system-ui,sans-serif'
+            }}
+          >🗑️ Saare Subjects Remove Karo</button>
+        </div>
+      )}
+
+      {/* ── CLEAR ALL CONFIRM MODAL ── */}
+      {clearConfirm && (
+        <div className="modal-overlay" onClick={()=>setClearConfirm(false)}>
+          <div className="modal" style={{maxWidth:'380px',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:'52px',marginBottom:'12px'}}>🗑️</div>
+            <div style={{fontFamily:'Syne,sans-serif',fontSize:'20px',fontWeight:800,color:'var(--red)',marginBottom:'8px'}}>
+              Saare Subjects Delete Karein?
+            </div>
+            <div style={{fontSize:'13px',color:'var(--text2)',lineHeight:'1.7',marginBottom:'24px'}}>
+              Ye action <strong style={{color:'var(--red)'}}>undo nahi ho sakta.</strong><br/>
+              Saare subjects permanently delete ho jayenge.
+            </div>
+            <div style={{display:'flex',gap:'12px'}}>
+              <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setClearConfirm(false)}>Cancel</button>
+              <button
+                className="btn"
+                style={{flex:1,background:'var(--red)',color:'white',border:'none'}}
+                onClick={clearAllSubjects}
+              >🗑️ Haan, Delete Karo</button>
             </div>
           </div>
         </div>
@@ -1342,21 +1397,7 @@ function App() {
     toast('Logged out! Bye 👋','info');
   }
 
-  const [clearConfirm, setClearConfirm] = React.useState(false);
 
-  async function clearAllSubjects() {
-    if (!col) { toast('Firebase ready nahi hai!', 'error'); return; }
-    setClearConfirm(false);
-    try {
-      const snap = await col.get();
-      if (snap.empty) { toast('Koi subject nahi hai abhi!', 'error'); return; }
-      const count = snap.size;
-      await Promise.all(snap.docs.map(d => d.ref.delete()));
-      toast('🗑️ Saare ' + count + ' subjects delete ho gaye!', 'error');
-    } catch(e) {
-      toast('Delete failed: ' + e.message, 'error');
-    }
-  }
 
   if(user===undefined) return (
     <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'100vh',gap:'20px'}}>
@@ -1393,43 +1434,9 @@ function App() {
             <span style={{maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{displayName}</span>
           </div>
           <button className="theme-toggle" onClick={()=>setDark(p=>!p)}>{dark?'☀️':'🌙'}</button>
-          <button
-            className="btn btn-ghost"
-            style={{padding:'7px 14px',fontSize:'13px',color:'var(--red)',border:'1px solid rgba(248,113,113,0.25)',background:'var(--red-bg)'}}
-            onClick={()=>setClearConfirm(true)}
-            title="Saare subjects delete karo"
-          >🗑️ Clear All</button>
           <button className="btn btn-ghost" style={{padding:'7px 14px',fontSize:'13px'}} onClick={logout}>Logout</button>
         </div>
       </nav>
-
-      {/* ── CLEAR ALL CONFIRM MODAL ── */}
-      {clearConfirm && (
-        <div className="modal-overlay" onClick={()=>setClearConfirm(false)}>
-          <div className="modal" style={{maxWidth:'380px',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
-            <div style={{fontSize:'52px',marginBottom:'12px'}}>🗑️</div>
-            <div style={{fontFamily:'Syne,sans-serif',fontSize:'20px',fontWeight:800,color:'var(--red)',marginBottom:'8px'}}>
-              Saare Subjects Delete Karein?
-            </div>
-            <div style={{fontSize:'13px',color:'var(--text2)',lineHeight:'1.7',marginBottom:'24px'}}>
-              Ye action <strong style={{color:'var(--red)'}}>undo nahi ho sakta.</strong><br/>
-              Saare subjects permanently delete ho jayenge.
-            </div>
-            <div style={{display:'flex',gap:'12px'}}>
-              <button
-                className="btn btn-ghost"
-                style={{flex:1,fontSize:'14px'}}
-                onClick={()=>setClearConfirm(false)}
-              >Cancel</button>
-              <button
-                className="btn"
-                style={{flex:1,fontSize:'14px',background:'var(--red)',color:'white',border:'none'}}
-                onClick={clearAllSubjects}
-              >🗑️ Haan, Delete Karo</button>
-            </div>
-          </div>
-        </div>
-      )}
       {syncBanner && (
         <SyncBanner
           subjects={syncBanner.subjects}
