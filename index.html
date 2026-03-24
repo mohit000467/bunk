@@ -720,60 +720,98 @@ function Subjects({user}) {
 
 function parseCyberVidyaData(raw) {
   /*
-    KIET CyberVidya copy-paste format (line-by-line):
-    Line 1: "1ANN and Machine Learning"       (serial + subject name)
-    Line 2: "BLENDEDCS303B-...CS4C1642483%"  (component+variant+P+S+L+pct all jammed)
+    KIET CyberVidya copy-paste format — supports:
 
-    Numbers at end of line 2 are: Presents, Special, Lectures, Pct% — all concatenated
-    attended = Presents + Special
-    conducted = Lectures
+    FORMAT A (paired lines):
+      Line1: "1ANN and Machine Learning"
+      Line2: "BLENDEDCS303B-...CS4C1642483%"
+
+    FORMAT B (everything on one line per subject):
+      "1ANN and Machine LearningBLENDEDCS303B-...CS4C1642483%"
+
+    Numbers at end: Presents, Special, Lectures, Pct% — all jammed together
+    attended = Presents + Special,  conducted = Lectures
+
+    KEY FIX: Subjects with same name but different component
+    (e.g. "Design and Analysis of Al..." THEORY vs PRACTICAL)
+    get " (Lab)" appended to PRACTICAL so they don't collide.
   */
   const results = [];
   if (!raw || !raw.trim()) return results;
 
   const lines = raw.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
   const SKIP = /^(s\.?no\.?|course|component|variant|presents|special|lectures|attendance|%|course component|course variant|special attendance)$/i;
-  const COMPONENT_START = /^(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i;
+  const COMPONENT_RX = /^(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i;
+
+  function getNameWithSuffix(nameStr, dataLine) {
+    const compMatch = dataLine.match(/^(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i);
+    const component = compMatch ? compMatch[1].toUpperCase() : '';
+    let name = cleanName(nameStr.replace(/^\d+\s*/, '').trim().replace(/\.\.\.$/,'').trim());
+    if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
+    return name;
+  }
 
   // ── STRATEGY 1: Paired lines (CyberVidya Ctrl+A format) ─
   for (let i = 0; i < lines.length - 1; i++) {
     const nameLine = lines[i];
     const dataLine = lines[i + 1];
 
-    // dataLine must end with digits+%
     if (!/%$/.test(dataLine)) continue;
-    // dataLine must start with a component keyword
-    if (!COMPONENT_START.test(dataLine)) continue;
+    if (!COMPONENT_RX.test(dataLine)) continue;
 
-    // Extract name from nameLine
     const nameStripped = nameLine.replace(/^\d+\s*/, '').trim().replace(/\.\.\.$/,'').trim();
     if (!nameStripped || nameStripped.length < 3) continue;
-    if (SKIP.test(nameStripped) || COMPONENT_START.test(nameStripped)) continue;
+    if (SKIP.test(nameStripped) || COMPONENT_RX.test(nameStripped)) continue;
     if (!/[A-Za-z]{3,}/.test(nameStripped)) continue;
 
-    // Parse numbers from dataLine using pct-validation algorithm
     const nums = parseKIETNumbers(dataLine);
     if (!nums) continue;
 
     const attended = Math.min(nums.presents + nums.special, nums.lectures);
-    results.push({ name: cleanName(nameStripped), attended, conducted: nums.lectures });
-    i++; // skip dataLine
+    const name = getNameWithSuffix(nameStripped, dataLine);
+    results.push({ name, attended, conducted: nums.lectures });
+    i++;
   }
 
-  // ── STRATEGY 2: Single-line format (space-separated) ────
+  // ── STRATEGY 2: Everything on ONE line per subject ───────
+  // Format: "1ANN and Machine LearningBLENDEDCS303B-...1642483%"
+  if (results.length === 0) {
+    for (const line of lines) {
+      if (!/%$/.test(line)) continue;
+      const compMatch = line.match(/(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i);
+      if (!compMatch) continue;
+
+      const compIdx = line.search(/(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i);
+      let namePart = line.slice(0, compIdx).replace(/^\d+/, '').trim().replace(/\.\.\.$/,'').trim();
+      if (!namePart || namePart.length < 3) continue;
+
+      const component = compMatch[1].toUpperCase();
+      const nums = parseKIETNumbers(line);
+      if (!nums) continue;
+
+      const attended = Math.min(nums.presents + nums.special, nums.lectures);
+      let name = cleanName(namePart);
+      if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
+      results.push({ name, attended, conducted: nums.lectures });
+    }
+  }
+
+  // ── STRATEGY 3: Space-separated fallback ────────────────
   if (results.length === 0) {
     const flat = raw.replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ');
     const rx = /(?:\d+\s+)?([A-Za-z][A-Za-z0-9&\-\s\.]{3,50}?)\s+(THEORY|PRACTICAL|BLENDED|LAB)\s+\S+\s+(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s+\d{1,3}%/gi;
     let m;
     while ((m = rx.exec(flat)) !== null) {
-      const name = cleanName(m[1]);
+      const component = m[2].toUpperCase();
+      let name = cleanName(m[1]);
+      if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
       const p = parseInt(m[3]), s = parseInt(m[4]), l = parseInt(m[5]);
       if (!name || l <= 0) continue;
       results.push({ name, attended: Math.min(p+s, l), conducted: l });
     }
   }
 
-  // ── DEDUPLICATE ──────────────────────────────────────────
+  // ── DEDUPLICATE by exact name (after Lab suffix) ─────────
   const seen = new Set();
   return results.filter(s => {
     if (!s.name || s.name.length < 2) return false;
@@ -786,19 +824,15 @@ function parseCyberVidyaData(raw) {
 // Extract P, S, L, Pct from jammed number string at end of CyberVidya data line
 // e.g. "...CS4C1642483%" -> P=16, S=4, L=24, pct=83
 function parseKIETNumbers(dataLine) {
-  // Find last letter — numbers start right after it
   let lastLetterIdx = -1;
   for (let i = dataLine.length - 1; i >= 0; i--) {
     if (/[A-Za-z]/.test(dataLine[i])) { lastLetterIdx = i; break; }
   }
   if (lastLetterIdx === -1) return null;
 
-  // Get all digits after the last letter (strip %, spaces etc.)
   const tail = dataLine.slice(lastLetterIdx + 1).replace(/[^\d]/g, '');
   if (tail.length < 3) return null;
 
-  // tail = P + S + L + Pct all concatenated (e.g. "1642483")
-  // Try all 4-way splits, validate using Pct
   const candidates = [];
   for (let p1 = 1; p1 <= 3; p1++) {
     for (let p2 = 0; p2 <= 2; p2++) {
@@ -821,11 +855,9 @@ function parseKIETNumbers(dataLine) {
     }
   }
   if (!candidates.length) return null;
-  // Pick best: lowest diff first, then smallest lectures (most realistic)
   candidates.sort((a, b) => a.score - b.score);
   return candidates[0];
 }
-
 function cleanName(s) {
   return (s || '')
     .replace(/\.\.\./g, '')
@@ -955,13 +987,11 @@ function ImportSection({ col, onImported }) {
                 background:'rgba(124,106,247,0.08)', border:'1px solid rgba(124,106,247,0.2)',
                 fontSize:'13px', lineHeight:'1.7', color:'var(--text2)'
               }}>
-                <div style={{fontWeight:700,color:'var(--accent2)',marginBottom:'6px'}}>📌 Ye karo (exactly):</div>
-                <div>1️⃣ <a href="https://kiet.cybervidya.net/attendance/my-attendance" target="_blank" style={{color:'var(--accent2)'}}>kiet.cybervidya.net/attendance/my-attendance</a> kholo</div>
-                <div>2️⃣ Page fully load hone do</div>
-                <div>3️⃣ Table ke andar click karo → <strong style={{color:'var(--text)'}}>Ctrl+A</strong> (sab select)</div>
-                <div>4️⃣ <strong style={{color:'var(--text)'}}>Ctrl+C</strong> (copy)</div>
-                <div>5️⃣ Neeche box mein <strong style={{color:'var(--text)'}}>Ctrl+V</strong> (paste)</div>
-                <div>6️⃣ 🔍 <strong style={{color:'var(--text)'}}>Parse & Preview</strong> click karo</div>
+                <div style={{fontWeight:700,color:'var(--accent2)',marginBottom:'6px'}}>📌 Ye karo (3 steps only):</div>
+                <div>1️⃣ <a href="https://kiet.cybervidya.net/attendance/my-attendance" target="_blank" style={{color:'var(--accent2)'}}>CyberVidya Attendance Page</a> kholo</div>
+                <div>2️⃣ Pure table ko <strong style={{color:'var(--text)'}}>Ctrl+A → Ctrl+C</strong> karo</div>
+                <div>3️⃣ Neeche box mein <strong style={{color:'var(--text)'}}>Ctrl+V</strong> karo → Parse click karo</div>
+                <div style={{marginTop:'6px',padding:'8px',background:'rgba(52,211,153,0.08)',borderRadius:'6px',fontSize:'11px',color:'var(--green)'}}>✅ Same naam wale subjects (Theory + Lab) automatically alag ho jayenge!</div>
               </div>
 
               <div className="input-wrap" style={{marginBottom:'14px'}}>
@@ -969,7 +999,7 @@ function ImportSection({ col, onImported }) {
                 <textarea
                   value={raw}
                   onChange={e=>setRaw(e.target.value)}
-                  placeholder={`CyberVidya se Ctrl+A → Ctrl+C karke yahan paste karo!\n\nExample (exactly aisa dikhega):\n1ANN and Machine Learning\nBLENDED\nCS303B-...\n16\n4\n24\n83%\n2Computer Networks\nTHEORY\nIT302L-...\n13\n5\n23\n78%`}
+                  placeholder={`CyberVidya se Ctrl+A → Ctrl+C karke yahan paste karo!\n\nExample format:\n1ANN and Machine Learning\nBLENDEDCS303B-...CS4C1642483%\n\n7Design and Analysis of Al...\nTHEORYCS401L-...CS4C1752588%\n\n8Design and Analysis of Al...\nPRACTICALCS401P-...CS4C1642483%\n(Ye dono alag subjects ban jayenge automatically!)`}
                   style={{
                     width:'100%', minHeight:'160px', padding:'12px 14px',
                     background:'var(--surface)', border:'1.5px solid var(--border)',
