@@ -252,20 +252,21 @@ function MiniBar({pct, target}) {
 }
 
 function AuthScreen({onAuth}) {
-  const [mode,setMode]     = useState('login');
-  const [name,setName]     = useState('');
-  const [email,setEmail]   = useState('');
-  const [pass,setPass]     = useState('');
-  const [showPw,setShowPw] = useState(false);
+  const [mode,setMode]       = useState('login');
+  const [name,setName]       = useState('');
+  const [email,setEmail]     = useState('');
+  const [pass,setPass]       = useState('');
+  const [showPw,setShowPw]   = useState(false);
   const [loading,setLoading] = useState(false);
-  const [errors,setErrors] = useState({});
+  const [errors,setErrors]   = useState({});
+  const [resetSent,setResetSent] = useState(false);
 
   function validate() {
     const e={};
     if(mode==='signup' && !name.trim()) e.name='Name required';
     if(!email.trim()) e.email='Email required';
     else if(!/\S+@\S+\.\S+/.test(email)) e.email='Invalid email';
-    if(!pass || pass.length<6) e.pass='Min 6 characters';
+    if(mode!=='forgot' && (!pass || pass.length<6)) e.pass='Min 6 characters';
     return e;
   }
 
@@ -274,7 +275,10 @@ function AuthScreen({onAuth}) {
     if(Object.keys(e).length) return;
     setLoading(true);
     try {
-      if(mode==='login') {
+      if(mode==='forgot') {
+        await auth.sendPasswordResetEmail(email.trim());
+        setResetSent(true);
+      } else if(mode==='login') {
         const c = await auth.signInWithEmailAndPassword(email.trim(), pass);
         toast('Welcome back! 👋','success');
         onAuth(c.user);
@@ -285,15 +289,18 @@ function AuthScreen({onAuth}) {
         onAuth(c.user);
       }
     } catch(err) {
-      const m = err.code==='auth/user-not-found'       ? 'No account with this email' :
+      const m = err.code==='auth/user-not-found'       ? 'Is email pe koi account nahi hai' :
                 err.code==='auth/wrong-password'       ? 'Wrong password bhai 🙈' :
                 err.code==='auth/email-already-in-use' ? 'Email already registered' :
                 err.code==='auth/too-many-requests'    ? 'Too many attempts. Wait karo!' :
+                err.code==='auth/invalid-email'        ? 'Invalid email format' :
                 err.message;
       toast(m,'error');
     }
     setLoading(false);
   }
+
+  function switchMode(m) { setMode(m); setErrors({}); setResetSent(false); }
 
   return (
     <div className="auth-page">
@@ -303,48 +310,102 @@ function AuthScreen({onAuth}) {
           <div className="auth-logo-title">Bunk<span>Planner</span> Pro</div>
           <div className="auth-logo-sub">Bunk smarter, not harder 😎</div>
         </div>
-        <div className="auth-tabs">
-          <button className={`auth-tab ${mode==='login'?'active':''}`} onClick={()=>{setMode('login');setErrors({})}}>🔑 Login</button>
-          <button className={`auth-tab ${mode==='signup'?'active':''}`} onClick={()=>{setMode('signup');setErrors({})}}>✨ Sign Up</button>
-        </div>
-        <div className="auth-stack">
-          {mode==='signup' && (
-            <div className="input-wrap">
-              <label className="input-label">Your Name</label>
-              <input className={`input ${errors.name?'error':''}`} placeholder="e.g. Mohit Sharma"
-                value={name} onChange={e=>{setName(e.target.value);setErrors(p=>({...p,name:''}))}}
-                onKeyDown={e=>e.key==='Enter'&&submit()}/>
-              {errors.name && <span className="input-hint">{errors.name}</span>}
-            </div>
-          )}
-          <div className="input-wrap">
-            <label className="input-label">Email</label>
-            <input className={`input ${errors.email?'error':''}`} type="email" placeholder="you@email.com"
-              value={email} onChange={e=>{setEmail(e.target.value);setErrors(p=>({...p,email:''}))}}
-              onKeyDown={e=>e.key==='Enter'&&submit()}/>
-            {errors.email && <span className="input-hint">{errors.email}</span>}
+
+        {/* ── FORGOT PASSWORD VIEW ── */}
+        {mode==='forgot' ? (
+          <div className="auth-stack">
+            {resetSent ? (
+              <div style={{textAlign:'center',padding:'10px 0'}}>
+                <div style={{fontSize:'48px',marginBottom:'12px'}}>📧</div>
+                <div style={{fontFamily:'Syne,sans-serif',fontSize:'18px',fontWeight:800,color:'var(--green)',marginBottom:'8px'}}>
+                  Email Bhej Diya!
+                </div>
+                <div style={{fontSize:'13px',color:'var(--text2)',lineHeight:'1.7',marginBottom:'20px'}}>
+                  <strong style={{color:'var(--text)'}}>{email}</strong> pe password reset link bheja gaya hai.<br/>
+                  Inbox check karo (Spam bhi dekh lena 😄)
+                </div>
+                <button className="btn btn-primary btn-full" onClick={()=>switchMode('login')}>
+                  🔑 Login Pe Wapas Jao
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{textAlign:'center',marginBottom:'16px'}}>
+                  <div style={{fontSize:'36px',marginBottom:'8px'}}>🔐</div>
+                  <div style={{fontFamily:'Syne,sans-serif',fontSize:'16px',fontWeight:700,color:'var(--text)'}}>Password Reset</div>
+                  <div style={{fontSize:'12px',color:'var(--text2)',marginTop:'4px'}}>Email daalo — reset link bhej denge</div>
+                </div>
+                <div className="input-wrap">
+                  <label className="input-label">Registered Email</label>
+                  <input className={`input ${errors.email?'error':''}`} type="email" placeholder="you@email.com"
+                    value={email} onChange={e=>{setEmail(e.target.value);setErrors(p=>({...p,email:''}))}}
+                    onKeyDown={e=>e.key==='Enter'&&submit()} autoFocus/>
+                  {errors.email && <span className="input-hint">{errors.email}</span>}
+                </div>
+                <button className="btn btn-primary btn-full" onClick={submit} disabled={loading}>
+                  {loading ? '⏳ Sending...' : '📧 Reset Link Bhejo'}
+                </button>
+                <button onClick={()=>switchMode('login')}
+                  style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:'12px',marginTop:'8px',width:'100%'}}>
+                  ← Login pe wapas jao
+                </button>
+              </>
+            )}
           </div>
-          <div className="input-wrap">
-            <label className="input-label">Password</label>
-            <div className="input-group">
-              <input className={`input ${errors.pass?'error':''}`} type={showPw?'text':'password'} placeholder="Min 6 characters"
-                value={pass} onChange={e=>{setPass(e.target.value);setErrors(p=>({...p,pass:''}))}}
-                onKeyDown={e=>e.key==='Enter'&&submit()}/>
-              <button className="input-eye" onClick={()=>setShowPw(p=>!p)} type="button">{showPw?'🙈':'👁️'}</button>
+        ) : (
+          <>
+            <div className="auth-tabs">
+              <button className={`auth-tab ${mode==='login'?'active':''}`} onClick={()=>switchMode('login')}>🔑 Login</button>
+              <button className={`auth-tab ${mode==='signup'?'active':''}`} onClick={()=>switchMode('signup')}>✨ Sign Up</button>
             </div>
-            {errors.pass && <span className="input-hint">{errors.pass}</span>}
-          </div>
-          <button className="btn btn-primary btn-full" onClick={submit} disabled={loading}>
-            {loading ? '⏳ Please wait...' : mode==='login' ? '🚀 Login' : '✨ Create Account'}
-          </button>
-        </div>
-        <div style={{textAlign:'center',marginTop:'20px',fontSize:'12px',color:'var(--text3)'}}>
-          {mode==='login' ? "Don't have an account? " : 'Already registered? '}
-          <button onClick={()=>{setMode(mode==='login'?'signup':'login');setErrors({})}}
-            style={{background:'none',border:'none',color:'var(--accent2)',fontWeight:700,cursor:'pointer',fontSize:'12px'}}>
-            {mode==='login' ? 'Sign Up Free' : 'Login'}
-          </button>
-        </div>
+            <div className="auth-stack">
+              {mode==='signup' && (
+                <div className="input-wrap">
+                  <label className="input-label">Your Name</label>
+                  <input className={`input ${errors.name?'error':''}`} placeholder="e.g. Mohit Sharma"
+                    value={name} onChange={e=>{setName(e.target.value);setErrors(p=>({...p,name:''}))}}
+                    onKeyDown={e=>e.key==='Enter'&&submit()}/>
+                  {errors.name && <span className="input-hint">{errors.name}</span>}
+                </div>
+              )}
+              <div className="input-wrap">
+                <label className="input-label">Email</label>
+                <input className={`input ${errors.email?'error':''}`} type="email" placeholder="you@email.com"
+                  value={email} onChange={e=>{setEmail(e.target.value);setErrors(p=>({...p,email:''}))}}
+                  onKeyDown={e=>e.key==='Enter'&&submit()}/>
+                {errors.email && <span className="input-hint">{errors.email}</span>}
+              </div>
+              <div className="input-wrap">
+                <label className="input-label" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  Password
+                  {mode==='login' && (
+                    <button onClick={()=>switchMode('forgot')}
+                      style={{background:'none',border:'none',color:'var(--accent2)',fontSize:'11px',fontWeight:600,cursor:'pointer',padding:0}}>
+                      Forgot Password?
+                    </button>
+                  )}
+                </label>
+                <div className="input-group">
+                  <input className={`input ${errors.pass?'error':''}`} type={showPw?'text':'password'} placeholder="Min 6 characters"
+                    value={pass} onChange={e=>{setPass(e.target.value);setErrors(p=>({...p,pass:''}))}}
+                    onKeyDown={e=>e.key==='Enter'&&submit()}/>
+                  <button className="input-eye" onClick={()=>setShowPw(p=>!p)} type="button">{showPw?'🙈':'👁️'}</button>
+                </div>
+                {errors.pass && <span className="input-hint">{errors.pass}</span>}
+              </div>
+              <button className="btn btn-primary btn-full" onClick={submit} disabled={loading}>
+                {loading ? '⏳ Please wait...' : mode==='login' ? '🚀 Login' : '✨ Create Account'}
+              </button>
+            </div>
+            <div style={{textAlign:'center',marginTop:'20px',fontSize:'12px',color:'var(--text3)'}}>
+              {mode==='login' ? "Don't have an account? " : 'Already registered? '}
+              <button onClick={()=>switchMode(mode==='login'?'signup':'login')}
+                style={{background:'none',border:'none',color:'var(--accent2)',fontWeight:700,cursor:'pointer',fontSize:'12px'}}>
+                {mode==='login' ? 'Sign Up Free' : 'Login'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
