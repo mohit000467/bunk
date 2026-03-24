@@ -719,79 +719,111 @@ function Subjects({user}) {
 // ═══════════════════════════════════════════════════════
 
 function parseCyberVidyaData(raw) {
+  /*
+    KIET CyberVidya copy-paste format (line-by-line):
+    Line 1: "1ANN and Machine Learning"       (serial + subject name)
+    Line 2: "BLENDEDCS303B-...CS4C1642483%"  (component+variant+P+S+L+pct all jammed)
+
+    Numbers at end of line 2 are: Presents, Special, Lectures, Pct% — all concatenated
+    attended = Presents + Special
+    conducted = Lectures
+  */
   const results = [];
   if (!raw || !raw.trim()) return results;
 
-  // Normalize: collapse all whitespace/newlines into single spaces
-  const text = raw.replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  const lines = raw.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
+  const SKIP = /^(s\.?no\.?|course|component|variant|presents|special|lectures|attendance|%|course component|course variant|special attendance)$/i;
+  const COMPONENT_START = /^(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i;
 
-  // ── Strategy 1: KIET CyberVidya table format ──────────
-  // Pattern: (optional serial) SubjectName (THEORY|PRACTICAL|BLENDED) ... P A Total %
-  // e.g. "1 Data Structures THEORY 30 2 35 91%"
-  //       "Operating Systems BLENDED 20 5 28 80%"
-  const regex1 = /(?:\d+\s+)?([A-Za-z][A-Za-z0-9&\-\/\s\.]{2,50?}?)\s+(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)\s+[\w\s]*?(\d+)\s+(\d+)\s+(\d+)\s+\d+\s*%/gi;
-  let m;
-  while ((m = regex1.exec(text)) !== null) {
-    const name      = cleanName(m[1]);
-    const presents  = parseInt(m[3]);  // Present
-    const special   = parseInt(m[4]);  // Special / Absent
-    const lectures  = parseInt(m[5]);  // Total lectures
-    if (!name || lectures <= 0) continue;
-    // attended = present + special (some portals count both)
-    const attended = Math.min(presents + special, lectures);
-    if (attended >= 0 && lectures > 0)
-      results.push({ name, attended, conducted: lectures });
+  // ── STRATEGY 1: Paired lines (CyberVidya Ctrl+A format) ─
+  for (let i = 0; i < lines.length - 1; i++) {
+    const nameLine = lines[i];
+    const dataLine = lines[i + 1];
+
+    // dataLine must end with digits+%
+    if (!/%$/.test(dataLine)) continue;
+    // dataLine must start with a component keyword
+    if (!COMPONENT_START.test(dataLine)) continue;
+
+    // Extract name from nameLine
+    const nameStripped = nameLine.replace(/^\d+\s*/, '').trim().replace(/\.\.\.$/,'').trim();
+    if (!nameStripped || nameStripped.length < 3) continue;
+    if (SKIP.test(nameStripped) || COMPONENT_START.test(nameStripped)) continue;
+    if (!/[A-Za-z]{3,}/.test(nameStripped)) continue;
+
+    // Parse numbers from dataLine using pct-validation algorithm
+    const nums = parseKIETNumbers(dataLine);
+    if (!nums) continue;
+
+    const attended = Math.min(nums.presents + nums.special, nums.lectures);
+    results.push({ name: cleanName(nameStripped), attended, conducted: nums.lectures });
+    i++; // skip dataLine
   }
 
-  // ── Strategy 2: "Subject Name\n25\n30" or "Subject 25/30" ──
+  // ── STRATEGY 2: Single-line format (space-separated) ────
   if (results.length === 0) {
-    // Try "Name P/T" pattern: "Data Structures 25/30"
-    const regex2 = /([A-Za-z][A-Za-z0-9\s&\-\/\.]{3,50}?)\s+(\d+)\s*[\/\\]\s*(\d+)/g;
-    while ((m = regex2.exec(text)) !== null) {
-      const name      = cleanName(m[1]);
-      const attended  = parseInt(m[2]);
-      const conducted = parseInt(m[3]);
-      if (!name || conducted <= 0 || attended > conducted) continue;
-      results.push({ name, attended, conducted });
+    const flat = raw.replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ');
+    const rx = /(?:\d+\s+)?([A-Za-z][A-Za-z0-9&\-\s\.]{3,50}?)\s+(THEORY|PRACTICAL|BLENDED|LAB)\s+\S+\s+(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s+\d{1,3}%/gi;
+    let m;
+    while ((m = rx.exec(flat)) !== null) {
+      const name = cleanName(m[1]);
+      const p = parseInt(m[3]), s = parseInt(m[4]), l = parseInt(m[5]);
+      if (!name || l <= 0) continue;
+      results.push({ name, attended: Math.min(p+s, l), conducted: l });
     }
   }
 
-  // ── Strategy 3: Line-by-line fallback ──────────────────
-  if (results.length === 0) {
-    const lines = raw.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      // Skip obvious headers
-      if (/subject|course|present|absent|total|attendance|s\.no/i.test(line) && !/\d{2,}/.test(line)) continue;
-
-      const nums = line.match(/\d+/g)?.map(Number) || [];
-      const words = line.replace(/\d+/g, '').replace(/[%\/\\|]/g, ' ').trim();
-
-      if (nums.length >= 2 && words.length > 3) {
-        // Heuristic: last two meaningful numbers are attended / conducted
-        let conducted = 0, attended = 0;
-        // Find a pair where attended <= conducted and conducted looks realistic (5-300)
-        for (let j = nums.length - 1; j >= 1; j--) {
-          if (nums[j] >= 5 && nums[j] <= 300 && nums[j-1] <= nums[j]) {
-            conducted = nums[j];
-            attended  = nums[j-1];
-            break;
-          }
-        }
-        const name = cleanName(words);
-        if (name && conducted > 0 && attended <= conducted)
-          results.push({ name, attended, conducted });
-      }
-    }
-  }
-
-  // Deduplicate by name
+  // ── DEDUPLICATE ──────────────────────────────────────────
   const seen = new Set();
   return results.filter(s => {
+    if (!s.name || s.name.length < 2) return false;
     const k = s.name.toLowerCase();
     if (seen.has(k)) return false;
     seen.add(k); return true;
   });
+}
+
+// Extract P, S, L, Pct from jammed number string at end of CyberVidya data line
+// e.g. "...CS4C1642483%" -> P=16, S=4, L=24, pct=83
+function parseKIETNumbers(dataLine) {
+  // Find last letter — numbers start right after it
+  let lastLetterIdx = -1;
+  for (let i = dataLine.length - 1; i >= 0; i--) {
+    if (/[A-Za-z]/.test(dataLine[i])) { lastLetterIdx = i; break; }
+  }
+  if (lastLetterIdx === -1) return null;
+
+  // Get all digits after the last letter (strip %, spaces etc.)
+  const tail = dataLine.slice(lastLetterIdx + 1).replace(/[^\d]/g, '');
+  if (tail.length < 3) return null;
+
+  // tail = P + S + L + Pct all concatenated (e.g. "1642483")
+  // Try all 4-way splits, validate using Pct
+  const candidates = [];
+  for (let p1 = 1; p1 <= 3; p1++) {
+    for (let p2 = 0; p2 <= 2; p2++) {
+      for (let p3 = 1; p3 <= 3; p3++) {
+        const p4 = tail.length - p1 - p2 - p3;
+        if (p4 < 1 || p4 > 3) continue;
+        const P   = parseInt(tail.slice(0, p1));
+        const S   = p2 > 0 ? parseInt(tail.slice(p1, p1 + p2)) : 0;
+        const L   = parseInt(tail.slice(p1 + p2, p1 + p2 + p3));
+        const Pct = parseInt(tail.slice(p1 + p2 + p3));
+        if (Pct < 0 || Pct > 100) continue;
+        if (L < 1 || L > 200)     continue;
+        if (P < 0 || P > 200)     continue;
+        if (S < 0 || S > 100)     continue;
+        if (P + S > L + 1)        continue;
+        const calc = (P + S) / L * 100;
+        const diff = Math.abs(Math.round(calc) - Pct);
+        if (diff <= 1) candidates.push({ presents: P, special: S, lectures: L, score: diff * 1000 + L });
+      }
+    }
+  }
+  if (!candidates.length) return null;
+  // Pick best: lowest diff first, then smallest lectures (most realistic)
+  candidates.sort((a, b) => a.score - b.score);
+  return candidates[0];
 }
 
 function cleanName(s) {
@@ -923,12 +955,13 @@ function ImportSection({ col, onImported }) {
                 background:'rgba(124,106,247,0.08)', border:'1px solid rgba(124,106,247,0.2)',
                 fontSize:'13px', lineHeight:'1.7', color:'var(--text2)'
               }}>
-                <div style={{fontWeight:700,color:'var(--accent2)',marginBottom:'6px'}}>📌 Ye karo:</div>
-                <div>1️⃣ <a href="https://kiet.cybervidya.net" target="_blank" style={{color:'var(--accent2)'}}>kiet.cybervidya.net</a> kholo → Login karo</div>
-                <div>2️⃣ <strong style={{color:'var(--text)'}}>Attendance</strong> page pe jao</div>
-                <div>3️⃣ Saari attendance table <strong style={{color:'var(--text)'}}>Ctrl+A → Ctrl+C</strong> se copy karo</div>
-                <div>4️⃣ Neeche box mein <strong style={{color:'var(--text)'}}>Ctrl+V</strong> se paste karo</div>
-                <div>5️⃣ ⚡ <strong style={{color:'var(--text)'}}>Parse & Preview</strong> click karo</div>
+                <div style={{fontWeight:700,color:'var(--accent2)',marginBottom:'6px'}}>📌 Ye karo (exactly):</div>
+                <div>1️⃣ <a href="https://kiet.cybervidya.net/attendance/my-attendance" target="_blank" style={{color:'var(--accent2)'}}>kiet.cybervidya.net/attendance/my-attendance</a> kholo</div>
+                <div>2️⃣ Page fully load hone do</div>
+                <div>3️⃣ Table ke andar click karo → <strong style={{color:'var(--text)'}}>Ctrl+A</strong> (sab select)</div>
+                <div>4️⃣ <strong style={{color:'var(--text)'}}>Ctrl+C</strong> (copy)</div>
+                <div>5️⃣ Neeche box mein <strong style={{color:'var(--text)'}}>Ctrl+V</strong> (paste)</div>
+                <div>6️⃣ 🔍 <strong style={{color:'var(--text)'}}>Parse & Preview</strong> click karo</div>
               </div>
 
               <div className="input-wrap" style={{marginBottom:'14px'}}>
@@ -936,7 +969,7 @@ function ImportSection({ col, onImported }) {
                 <textarea
                   value={raw}
                   onChange={e=>setRaw(e.target.value)}
-                  placeholder={`Example format jo kaam karta hai:\n\nData Structures THEORY 30 2 35 91%\nOperating Systems BLENDED 20 5 28 80%\nComputer Networks THEORY 18 3 24 75%\n\nYa direct table copy karo CyberVidya se!`}
+                  placeholder={`CyberVidya se Ctrl+A → Ctrl+C karke yahan paste karo!\n\nExample (exactly aisa dikhega):\n1ANN and Machine Learning\nBLENDED\nCS303B-...\n16\n4\n24\n83%\n2Computer Networks\nTHEORY\nIT302L-...\n13\n5\n23\n78%`}
                   style={{
                     width:'100%', minHeight:'160px', padding:'12px 14px',
                     background:'var(--surface)', border:'1.5px solid var(--border)',
