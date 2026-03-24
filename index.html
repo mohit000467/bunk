@@ -621,7 +621,8 @@ function Subjects({user}) {
           </div>
         )}
       </>}
-
+{/* 🔥 IMPORT FROM CYBERVIDYA — SEMI AUTO */}
+<ImportSection col={col} onImported={()=>{}}/>
       {/* HEADER */}
       <div className="subjects-header">
         <div>
@@ -713,11 +714,529 @@ function Subjects({user}) {
     </div>
   );
 }
+// ═══════════════════════════════════════════════════════
+//  CYBERVIDYA SEMI-AUTO IMPORT — FULL COMPONENT
+// ═══════════════════════════════════════════════════════
 
+function parseCyberVidyaData(raw) {
+  /*
+    KIET CyberVidya copy-paste format (line-by-line):
+    Line 1: "1ANN and Machine Learning"       (serial + subject name)
+    Line 2: "BLENDEDCS303B-...CS4C1642483%"  (component+variant+P+S+L+pct all jammed)
+
+    Numbers at end of line 2 are: Presents, Special, Lectures, Pct% — all concatenated
+    attended = Presents + Special
+    conducted = Lectures
+  */
+  const results = [];
+  if (!raw || !raw.trim()) return results;
+
+  const lines = raw.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
+  const SKIP = /^(s\.?no\.?|course|component|variant|presents|special|lectures|attendance|%|course component|course variant|special attendance)$/i;
+  const COMPONENT_START = /^(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i;
+
+  // ── STRATEGY 1: Paired lines (CyberVidya Ctrl+A format) ─
+  for (let i = 0; i < lines.length - 1; i++) {
+    const nameLine = lines[i];
+    const dataLine = lines[i + 1];
+
+    // dataLine must end with digits+%
+    if (!/%$/.test(dataLine)) continue;
+    // dataLine must start with a component keyword
+    if (!COMPONENT_START.test(dataLine)) continue;
+
+    // Extract name from nameLine
+    const nameStripped = nameLine.replace(/^\d+\s*/, '').trim().replace(/\.\.\.$/,'').trim();
+    if (!nameStripped || nameStripped.length < 3) continue;
+    if (SKIP.test(nameStripped) || COMPONENT_START.test(nameStripped)) continue;
+    if (!/[A-Za-z]{3,}/.test(nameStripped)) continue;
+
+    // Parse numbers from dataLine using pct-validation algorithm
+    const nums = parseKIETNumbers(dataLine);
+    if (!nums) continue;
+
+    const attended = Math.min(nums.presents + nums.special, nums.lectures);
+    results.push({ name: cleanName(nameStripped), attended, conducted: nums.lectures });
+    i++; // skip dataLine
+  }
+
+  // ── STRATEGY 2: Single-line format (space-separated) ────
+  if (results.length === 0) {
+    const flat = raw.replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ');
+    const rx = /(?:\d+\s+)?([A-Za-z][A-Za-z0-9&\-\s\.]{3,50}?)\s+(THEORY|PRACTICAL|BLENDED|LAB)\s+\S+\s+(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s+\d{1,3}%/gi;
+    let m;
+    while ((m = rx.exec(flat)) !== null) {
+      const name = cleanName(m[1]);
+      const p = parseInt(m[3]), s = parseInt(m[4]), l = parseInt(m[5]);
+      if (!name || l <= 0) continue;
+      results.push({ name, attended: Math.min(p+s, l), conducted: l });
+    }
+  }
+
+  // ── DEDUPLICATE ──────────────────────────────────────────
+  const seen = new Set();
+  return results.filter(s => {
+    if (!s.name || s.name.length < 2) return false;
+    const k = s.name.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+}
+
+// Extract P, S, L, Pct from jammed number string at end of CyberVidya data line
+// e.g. "...CS4C1642483%" -> P=16, S=4, L=24, pct=83
+function parseKIETNumbers(dataLine) {
+  // Find last letter — numbers start right after it
+  let lastLetterIdx = -1;
+  for (let i = dataLine.length - 1; i >= 0; i--) {
+    if (/[A-Za-z]/.test(dataLine[i])) { lastLetterIdx = i; break; }
+  }
+  if (lastLetterIdx === -1) return null;
+
+  // Get all digits after the last letter (strip %, spaces etc.)
+  const tail = dataLine.slice(lastLetterIdx + 1).replace(/[^\d]/g, '');
+  if (tail.length < 3) return null;
+
+  // tail = P + S + L + Pct all concatenated (e.g. "1642483")
+  // Try all 4-way splits, validate using Pct
+  const candidates = [];
+  for (let p1 = 1; p1 <= 3; p1++) {
+    for (let p2 = 0; p2 <= 2; p2++) {
+      for (let p3 = 1; p3 <= 3; p3++) {
+        const p4 = tail.length - p1 - p2 - p3;
+        if (p4 < 1 || p4 > 3) continue;
+        const P   = parseInt(tail.slice(0, p1));
+        const S   = p2 > 0 ? parseInt(tail.slice(p1, p1 + p2)) : 0;
+        const L   = parseInt(tail.slice(p1 + p2, p1 + p2 + p3));
+        const Pct = parseInt(tail.slice(p1 + p2 + p3));
+        if (Pct < 0 || Pct > 100) continue;
+        if (L < 1 || L > 200)     continue;
+        if (P < 0 || P > 200)     continue;
+        if (S < 0 || S > 100)     continue;
+        if (P + S > L + 1)        continue;
+        const calc = (P + S) / L * 100;
+        const diff = Math.abs(Math.round(calc) - Pct);
+        if (diff <= 1) candidates.push({ presents: P, special: S, lectures: L, score: diff * 1000 + L });
+      }
+    }
+  }
+  if (!candidates.length) return null;
+  // Pick best: lowest diff first, then smallest lectures (most realistic)
+  candidates.sort((a, b) => a.score - b.score);
+  return candidates[0];
+}
+
+function cleanName(s) {
+  return (s || '')
+    .replace(/\.\.\./g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s\-&()\/]/g, '')
+    .trim()
+    .replace(/^[\d\s\.\-]+/, '')   // strip leading numbers
+    .trim()
+    .slice(0, 60);
+}
+
+// ── IMPORT SECTION COMPONENT ────────────────────────────
+function ImportSection({ col, onImported }) {
+  const [open,     setOpen]     = useState(false);
+  const [step,     setStep]     = useState(1);      // 1=paste 2=preview 3=done
+  const [raw,      setRaw]      = useState('');
+  const [parsed,   setParsed]   = useState([]);
+  const [selected, setSelected] = useState(new Set());
+  const [saving,   setSaving]   = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
+
+  function handleParse() {
+    if (!raw.trim()) { toast('Pehle data paste karo!','error'); return; }
+    const data = parseCyberVidyaData(raw);
+    if (data.length === 0) {
+      toast('Data samajh nahi aaya 😅 Neeche wala guide dekho!','error'); return;
+    }
+    setParsed(data);
+    setSelected(new Set(data.map((_,i)=>i))); // select all by default
+    setStep(2);
+  }
+
+  function toggleSel(i) {
+    setSelected(prev => {
+      const n = new Set(prev);
+      n.has(i) ? n.delete(i) : n.add(i);
+      return n;
+    });
+  }
+
+  async function handleImport() {
+    if (!col) { toast('Firebase not connected!','error'); return; }
+    if (selected.size === 0) { toast('Koi subject select nahi kiya!','error'); return; }
+    setSaving(true);
+
+    try {
+      const toImport = parsed.filter((_,i) => selected.has(i));
+      // Get existing subjects to avoid duplicates
+      const existing = await col.get();
+      const existingNames = existing.docs.map(d => d.data().name.toLowerCase().trim());
+
+      let added = 0, updated = 0;
+      for (const s of toImport) {
+        const nameKey = s.name.toLowerCase().trim();
+        const existDoc = existing.docs.find(d => d.data().name.toLowerCase().trim() === nameKey);
+        if (existDoc) {
+          await col.doc(existDoc.id).update({ conducted: s.conducted, attended: s.attended });
+          updated++;
+        } else {
+          await col.add({ name: s.name, conducted: s.conducted, attended: s.attended,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          added++;
+        }
+      }
+      setSavedCount({ added, updated });
+      setStep(3);
+      if (onImported) onImported();
+    } catch(e) {
+      toast('Import failed: ' + e.message, 'error');
+    }
+    setSaving(false);
+  }
+
+  function reset() { setOpen(false); setStep(1); setRaw(''); setParsed([]); setSelected(new Set()); setSavedCount(0); }
+
+  const pct = s => s.conducted > 0 ? ((s.attended/s.conducted)*100).toFixed(1) : 0;
+  const statusOf = s => { const p = parseFloat(pct(s)); return p>=75?'safe':p>=65?'risk':'danger'; };
+  const statusColor2 = s => { const st=statusOf(s); return st==='safe'?'var(--green)':st==='risk'?'var(--yellow)':'var(--red)'; };
+
+  return (
+    <>
+      {/* ── TRIGGER BUTTON ── */}
+      <div className="glass" style={{
+        padding:'18px 22px', marginBottom:'20px',
+        background:'linear-gradient(135deg,rgba(52,211,153,0.06),rgba(124,106,247,0.04))',
+        border:'1px solid rgba(52,211,153,0.2)',
+        display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'12px'
+      }}>
+        <div>
+          <div style={{fontFamily:'Syne,sans-serif',fontSize:'15px',fontWeight:700,marginBottom:'3px'}}>
+            📥 CyberVidya se Import karo
+          </div>
+          <div style={{fontSize:'12px',color:'var(--text2)'}}>
+            Attendance data copy karo aur ek click mein sab subjects add ho jayenge!
+          </div>
+        </div>
+        <button className="btn btn-primary" style={{whiteSpace:'nowrap'}} onClick={()=>setOpen(true)}>
+          ⚡ Quick Import
+        </button>
+      </div>
+
+      {/* ── MODAL ── */}
+      {open && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&reset()}>
+          <div className="modal" style={{maxWidth:'520px',maxHeight:'90vh',overflowY:'auto'}}>
+
+            {/* STEP INDICATOR */}
+            <div style={{display:'flex',gap:0,marginBottom:'20px'}}>
+              {['1. Copy & Paste','2. Preview','3. Done'].map((lbl,i)=>(
+                <div key={i} style={{
+                  flex:1, textAlign:'center', padding:'7px 4px',
+                  fontSize:'11px', fontWeight:700, letterSpacing:'0.04em',
+                  color: step===i+1?'var(--accent2)':step>i+1?'var(--green)':'var(--text3)',
+                  borderBottom: `2px solid ${step===i+1?'var(--accent)':step>i+1?'var(--green)':'var(--border)'}`,
+                  textTransform:'uppercase', transition:'all .2s'
+                }}>{lbl}</div>
+              ))}
+            </div>
+
+            {/* ── STEP 1: PASTE ── */}
+            {step===1 && <>
+              <div className="modal-title">📋 CyberVidya se Data Copy Karo</div>
+
+              {/* HOW TO GUIDE */}
+              <div style={{
+                padding:'14px', marginBottom:'16px', borderRadius:'10px',
+                background:'rgba(124,106,247,0.08)', border:'1px solid rgba(124,106,247,0.2)',
+                fontSize:'13px', lineHeight:'1.7', color:'var(--text2)'
+              }}>
+                <div style={{fontWeight:700,color:'var(--accent2)',marginBottom:'6px'}}>📌 Ye karo (exactly):</div>
+                <div>1️⃣ <a href="https://kiet.cybervidya.net/attendance/my-attendance" target="_blank" style={{color:'var(--accent2)'}}>kiet.cybervidya.net/attendance/my-attendance</a> kholo</div>
+                <div>2️⃣ Page fully load hone do</div>
+                <div>3️⃣ Table ke andar click karo → <strong style={{color:'var(--text)'}}>Ctrl+A</strong> (sab select)</div>
+                <div>4️⃣ <strong style={{color:'var(--text)'}}>Ctrl+C</strong> (copy)</div>
+                <div>5️⃣ Neeche box mein <strong style={{color:'var(--text)'}}>Ctrl+V</strong> (paste)</div>
+                <div>6️⃣ 🔍 <strong style={{color:'var(--text)'}}>Parse & Preview</strong> click karo</div>
+              </div>
+
+              <div className="input-wrap" style={{marginBottom:'14px'}}>
+                <label className="input-label">Copied Data Paste Karo Yahan 👇</label>
+                <textarea
+                  value={raw}
+                  onChange={e=>setRaw(e.target.value)}
+                  placeholder={`CyberVidya se Ctrl+A → Ctrl+C karke yahan paste karo!\n\nExample (exactly aisa dikhega):\n1ANN and Machine Learning\nBLENDED\nCS303B-...\n16\n4\n24\n83%\n2Computer Networks\nTHEORY\nIT302L-...\n13\n5\n23\n78%`}
+                  style={{
+                    width:'100%', minHeight:'160px', padding:'12px 14px',
+                    background:'var(--surface)', border:'1.5px solid var(--border)',
+                    borderRadius:'var(--radius-sm)', color:'var(--text)',
+                    fontFamily:'monospace', fontSize:'12px', resize:'vertical',
+                    outline:'none', lineHeight:'1.6'
+                  }}
+                  onFocus={e=>e.target.style.borderColor='var(--accent)'}
+                  onBlur={e=>e.target.style.borderColor='var(--border)'}
+                />
+              </div>
+
+              <div style={{display:'flex',gap:'10px'}}>
+                <button className="btn btn-ghost" style={{flex:1}} onClick={reset}>Cancel</button>
+                <button className="btn btn-primary" style={{flex:2}} onClick={handleParse}>
+                  🔍 Parse & Preview
+                </button>
+              </div>
+            </>}
+
+            {/* ── STEP 2: PREVIEW ── */}
+            {step===2 && <>
+              <div className="modal-title">✅ {parsed.length} Subjects Mila — Select Karo</div>
+
+              <div style={{
+                padding:'10px 14px', marginBottom:'14px', borderRadius:'8px',
+                background:'rgba(52,211,153,0.08)', border:'1px solid rgba(52,211,153,0.2)',
+                fontSize:'13px', color:'var(--green)'
+              }}>
+                🎉 {parsed.length} subjects parse ho gaye! Jo sync karne hain wo select karo.
+              </div>
+
+              {/* SELECT ALL / NONE */}
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
+                <span style={{fontSize:'12px',color:'var(--text2)'}}>{selected.size} / {parsed.length} selected</span>
+                <div style={{display:'flex',gap:'8px'}}>
+                  <button onClick={()=>setSelected(new Set(parsed.map((_,i)=>i)))}
+                    style={{background:'none',border:'none',color:'var(--accent2)',fontSize:'12px',cursor:'pointer',fontWeight:600}}>
+                    Select All
+                  </button>
+                  <button onClick={()=>setSelected(new Set())}
+                    style={{background:'none',border:'none',color:'var(--text3)',fontSize:'12px',cursor:'pointer',fontWeight:600}}>
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              {/* SUBJECT CARDS */}
+              <div style={{display:'flex',flexDirection:'column',gap:'8px',maxHeight:'280px',overflowY:'auto',marginBottom:'16px',paddingRight:'4px'}}>
+                {parsed.map((s,i)=>{
+                  const p = pct(s);
+                  const col2 = statusColor2(s);
+                  const isSel = selected.has(i);
+                  return (
+                    <div key={i}
+                      onClick={()=>toggleSel(i)}
+                      style={{
+                        padding:'12px 14px', borderRadius:'10px', cursor:'pointer',
+                        background: isSel ? 'rgba(124,106,247,0.08)' : 'var(--surface)',
+                        border: `1px solid ${isSel ? 'rgba(124,106,247,0.35)' : 'var(--border)'}`,
+                        display:'flex', alignItems:'center', gap:'12px',
+                        transition:'all .15s'
+                      }}
+                    >
+                      {/* CHECKBOX */}
+                      <div style={{
+                        width:'18px', height:'18px', borderRadius:'5px', flexShrink:0,
+                        background: isSel ? 'var(--accent)' : 'var(--surface2)',
+                        border: `1.5px solid ${isSel ? 'var(--accent)' : 'var(--border2)'}`,
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        fontSize:'11px', color:'white', transition:'all .15s'
+                      }}>
+                        {isSel ? '✓' : ''}
+                      </div>
+                      {/* INFO */}
+                      <div style={{flex:1, minWidth:0}}>
+                        <div style={{fontWeight:700,fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</div>
+                        <div style={{fontSize:'11px',color:'var(--text2)',marginTop:'2px'}}>{s.attended} attended · {s.conducted} total</div>
+                      </div>
+                      {/* PCT */}
+                      <div style={{textAlign:'right',flexShrink:0}}>
+                        <div style={{fontFamily:'Syne,sans-serif',fontSize:'16px',fontWeight:800,color:col2}}>{p}%</div>
+                        <div style={{
+                          fontSize:'9px',fontWeight:700,padding:'1px 6px',borderRadius:'100px',marginTop:'2px',
+                          background: statusOf(s)==='safe'?'var(--green-bg)':statusOf(s)==='risk'?'var(--yellow-bg)':'var(--red-bg)',
+                          color: col2
+                        }}>
+                          {statusOf(s)==='safe'?'SAFE':statusOf(s)==='risk'?'RISK':'LOW'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{display:'flex',gap:'10px'}}>
+                <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setStep(1)}>← Back</button>
+                <button className="btn btn-primary" style={{flex:2}} onClick={handleImport} disabled={saving||selected.size===0}>
+                  {saving
+                    ? <><span style={{animation:'spin .7s linear infinite',display:'inline-block'}}>⏳</span> Saving...</>
+                    : `☁️ Import ${selected.size} Subject${selected.size!==1?'s':''}`}
+                </button>
+              </div>
+            </>}
+
+            {/* ── STEP 3: SUCCESS ── */}
+            {step===3 && <>
+              <div style={{textAlign:'center',padding:'20px 0 10px'}}>
+                <div style={{fontSize:'56px',marginBottom:'14px'}}>🎉</div>
+                <div style={{fontFamily:'Syne,sans-serif',fontSize:'22px',fontWeight:800,color:'var(--green)',marginBottom:'8px'}}>
+                  Import Complete!
+                </div>
+                <div style={{fontSize:'14px',color:'var(--text2)',lineHeight:'1.7'}}>
+                  {savedCount.added > 0 && <div>✅ <strong>{savedCount.added}</strong> new subject{savedCount.added!==1?'s':''} add kiye</div>}
+                  {savedCount.updated > 0 && <div>🔄 <strong>{savedCount.updated}</strong> subject{savedCount.updated!==1?'s':''} update kiye</div>}
+                  <div style={{marginTop:'8px',color:'var(--text3)',fontSize:'12px'}}>Cloud pe sync ho gaya! Kisi bhi device pe dekh sakte ho ☁️</div>
+                </div>
+              </div>
+              <button className="btn btn-primary btn-full" style={{marginTop:'16px'}} onClick={reset}>
+                ✅ Done!
+              </button>
+            </>}
+
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+// ══ Parse CyberVidya API response ════════════════════════
+function parseCyberVidyaAPIData(apiData) {
+  const results = [];
+  try {
+    const arr = Array.isArray(apiData) ? apiData :
+      apiData.data ? (Array.isArray(apiData.data) ? apiData.data : [apiData.data]) :
+      apiData.attendance ? apiData.attendance :
+      apiData.result ? apiData.result : [];
+    for (const item of arr) {
+      const name     = (item.courseName||item.course_name||item.subject||item.subjectName||item.name||'').trim();
+      const presents = parseInt(item.presents||item.attended||item.present||0);
+      const special  = parseInt(item.specialAttendance||item.special||0);
+      const lectures = parseInt(item.lectures||item.totalLectures||item.conducted||0);
+      if (name && lectures > 0)
+        results.push({ name: name.slice(0,60), attended: Math.min(presents+special, lectures), conducted: lectures });
+    }
+  } catch(e) { console.warn('API parse error:', e); }
+  return results;
+}
+
+// ══ Sync Banner Component ═════════════════════════════════
+function SyncBanner({ subjects, user, onDone, onCancel }) {
+  const [selected, setSelected] = useState(new Set(subjects.map((_,i)=>i)));
+  const [saving,   setSaving]   = useState(false);
+  const [done,     setDone]     = useState(false);
+  const [counts,   setCounts]   = useState(null);
+
+  const col = (firebaseReady && user)
+    ? db.collection('users').doc(user.uid).collection('subjects')
+    : null;
+
+  function toggleSel(i) {
+    setSelected(prev=>{ const n=new Set(prev); n.has(i)?n.delete(i):n.add(i); return n; });
+  }
+
+  async function handleImport() {
+    if (!col) { toast('Firebase not connected!','error'); return; }
+    if (selected.size===0) { toast('Koi subject select nahi!','error'); return; }
+    setSaving(true);
+    try {
+      const toImport = subjects.filter((_,i)=>selected.has(i));
+      const existing = await col.get();
+      let added=0, updated=0;
+      for (const s of toImport) {
+        const key = s.name.toLowerCase().trim();
+        const existDoc = existing.docs.find(d=>d.data().name.toLowerCase().trim()===key);
+        if (existDoc) {
+          await col.doc(existDoc.id).update({ conducted:s.conducted, attended:s.attended });
+          updated++;
+        } else {
+          await col.add({ name:s.name, conducted:s.conducted, attended:s.attended,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          added++;
+        }
+      }
+      setCounts({ added, updated });
+      setDone(true);
+      toast(`✅ ${added} added, ${updated} updated!`, 'success');
+      setTimeout(onDone, 2500);
+    } catch(e) { toast('Import failed: '+e.message, 'error'); }
+    setSaving(false);
+  }
+
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(10px)',
+      zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px',animation:'fadeIn .25s ease'}}>
+      <div className="glass" style={{maxWidth:'480px',width:'100%',padding:'28px',maxHeight:'85vh',overflowY:'auto',animation:'bounceIn .3s ease'}}>
+        {!done ? (<>
+          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:20}}>
+            <div style={{fontSize:'32px'}}>🎓</div>
+            <div>
+              <div style={{fontFamily:'Syne,sans-serif',fontSize:'18px',fontWeight:800}}>CyberVidya Sync!</div>
+              <div style={{fontSize:'13px',color:'var(--text2)',marginTop:2}}>{subjects.length} subjects fetched — import karo</div>
+            </div>
+          </div>
+
+          <div style={{display:'flex',gap:8,marginBottom:12}}>
+            <button className="btn btn-ghost" style={{fontSize:'12px',padding:'6px 14px'}}
+              onClick={()=>setSelected(new Set(subjects.map((_,i)=>i)))}>Select All</button>
+            <button className="btn btn-ghost" style={{fontSize:'12px',padding:'6px 14px'}}
+              onClick={()=>setSelected(new Set())}>Clear</button>
+            <div style={{flex:1,textAlign:'right',fontSize:'12px',color:'var(--text2)',alignSelf:'center'}}>
+              {selected.size}/{subjects.length} selected
+            </div>
+          </div>
+
+          <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:18}}>
+            {subjects.map((s,i)=>{
+              const pct = calcAtt(s.conducted, s.attended);
+              const st  = getStatus(pct, 75);
+              const sel = selected.has(i);
+              return (
+                <div key={i} onClick={()=>toggleSel(i)}
+                  style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',
+                    background:sel?'var(--surface2)':'var(--surface)',
+                    border:`1.5px solid ${sel?'var(--accent)':'var(--border)'}`,
+                    borderRadius:'var(--radius-sm)',cursor:'pointer',transition:'all .15s'}}>
+                  <div style={{width:20,height:20,borderRadius:6,border:`2px solid ${sel?'var(--accent)':'var(--border2)'}`,
+                    background:sel?'var(--accent)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',
+                    flexShrink:0,fontSize:'12px',color:'#fff',transition:'all .15s'}}>{sel&&'✓'}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:'14px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</div>
+                    <div style={{fontSize:'12px',color:'var(--text2)',marginTop:2}}>{s.attended}/{s.conducted} classes</div>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3,flexShrink:0}}>
+                    <div style={{fontFamily:'Syne,sans-serif',fontWeight:800,fontSize:'16px',color:sColor(st)}}>{pct}%</div>
+                    <span className={`badge badge-${st}`}>{st.toUpperCase()}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+            <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleImport} disabled={saving||selected.size===0}>
+              {saving ? '⏳ Saving...' : `✅ Import ${selected.size} Subjects`}
+            </button>
+          </div>
+        </>) : (
+          <div style={{textAlign:'center',padding:'20px 0'}}>
+            <div style={{fontSize:'52px',marginBottom:12}}>🎉</div>
+            <div style={{fontFamily:'Syne,sans-serif',fontSize:'22px',fontWeight:800,marginBottom:8}}>Sync Complete!</div>
+            <div style={{fontSize:'14px',color:'var(--text2)'}}>{counts?.added} subjects added · {counts?.updated} updated</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══ App ═══════════════════════════════════════════════════
 function App() {
-  const [user,setUser] = useState(undefined);
-  const [dark,setDark] = useState(true);
-  const [tab,setTab]   = useState('subjects');
+  const [user,setUser]           = useState(undefined);
+  const [dark,setDark]           = useState(true);
+  const [tab,setTab]             = useState('subjects');
+  const [syncBanner, setSyncBanner] = useState(null);
+  const [extInstalled, setExtInstalled] = useState(false);
 
   useEffect(()=>{
     const saved = localStorage.getItem('bpp_theme');
@@ -725,9 +1244,61 @@ function App() {
     if(firebaseReady) {
       const unsub = auth.onAuthStateChanged(u => setUser(u||null));
       return ()=>unsub();
-    } else {
-      setUser(null);
+    } else { setUser(null); }
+  },[]);
+
+  // Extension detection
+  useEffect(()=>{
+    const check = ()=>{ if(document.getElementById('bunkplanner-extension-installed')) setExtInstalled(true); };
+    check(); const t=setTimeout(check,1500); return ()=>clearTimeout(t);
+  },[]);
+
+  // Process sync payload (called from event OR localStorage)
+  function processSyncPayload(detail) {
+    console.log('[BunkPlanner] Processing sync payload. Type:', detail.type);
+    let subjects = [];
+    if (detail.type === 'direct' && Array.isArray(detail.subjects)) {
+      subjects = detail.subjects;
+    } else if (detail.type === 'api' && detail.data) {
+      subjects = parseCyberVidyaAPIData(detail.data);
+    } else if (detail.type === 'scraped' && detail.data) {
+      subjects = parseCyberVidyaData(detail.data);
     }
+    if (subjects.length > 0) {
+      setSyncBanner({ subjects });
+      setTab('subjects');
+      toast(`🎓 ${subjects.length} subjects fetched from CyberVidya!`, 'success');
+    } else {
+      toast('CyberVidya se data parse nahi hua 😅', 'error');
+    }
+  }
+
+  // On mount: check localStorage for pending sync data (set by extension before React loaded)
+  useEffect(()=>{
+    const pending = localStorage.getItem('bp_pending_sync');
+    if (pending) {
+      localStorage.removeItem('bp_pending_sync');
+      try {
+        const parsed = JSON.parse(pending);
+        console.log('[BunkPlanner] Found pending sync in localStorage:', parsed.type, parsed.subjects?.length);
+        // Small delay so UI is fully rendered before showing banner
+        setTimeout(() => processSyncPayload(parsed), 600);
+      } catch(e) { console.error('[BunkPlanner] localStorage parse error:', e); }
+    }
+  // eslint-disable-next-line
+  }, []);
+
+  // Also listen for CustomEvent (fired by extension if React was already loaded)
+  useEffect(()=>{
+    function handleSync(e) {
+      const detail = e.detail || {};
+      // Clear localStorage since we got the event directly
+      localStorage.removeItem('bp_pending_sync');
+      processSyncPayload(detail);
+    }
+    window.addEventListener('bunkplanner-sync', handleSync);
+    return ()=>window.removeEventListener('bunkplanner-sync', handleSync);
+  // eslint-disable-next-line
   },[]);
 
   useEffect(()=>{
@@ -763,6 +1334,14 @@ function App() {
       <nav className="nav">
         <div className="nav-logo">Bunk<span>Planner</span> Pro</div>
         <div className="nav-right">
+          {extInstalled && (
+            <div style={{display:'flex',alignItems:'center',gap:5,fontSize:'11px',fontWeight:700,
+              color:'var(--green)',background:'var(--green-bg)',border:'1px solid rgba(52,211,153,.2)',
+              padding:'4px 10px',borderRadius:'100px'}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',display:'inline-block'}}/>
+              Extension Active
+            </div>
+          )}
           <div className="nav-user">
             <div className="nav-avatar">{initials}</div>
             <span style={{maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{displayName}</span>
@@ -771,6 +1350,14 @@ function App() {
           <button className="btn btn-ghost" style={{padding:'7px 14px',fontSize:'13px'}} onClick={logout}>Logout</button>
         </div>
       </nav>
+      {syncBanner && (
+        <SyncBanner
+          subjects={syncBanner.subjects}
+          user={user}
+          onDone={()=>setSyncBanner(null)}
+          onCancel={()=>setSyncBanner(null)}
+        />
+      )}
       <main className="main">
         <div className="hero">
           <div className="hero-badge">👋 Welcome, {displayName}!</div>
