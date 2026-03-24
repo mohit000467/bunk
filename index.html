@@ -1527,5 +1527,34 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  window.addEventListener("message", async (event) => {
+    if (event.data && event.data.type === "CYBERVIDYA_DATA") {
+      const data = event.data.payload;
+      console.log("🔥 Received from extension:", data);
+
+      if (window.db && window.firebase) {
+        const col = db.collection("imported_attendance");
+
+        for (const s of data) {
+          await col.add({
+            name: s.subject,
+            conducted: s.conducted,
+            attended: s.attended,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
+        console.log("✅ Auto saved to Firestore");
+      } else {
+        console.warn("Firebase not ready");
+      }
+    }
+  });
+});
+</script>
+
 </body>
 </html>
