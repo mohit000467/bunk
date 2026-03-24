@@ -1345,18 +1345,16 @@ function App() {
   const [clearConfirm, setClearConfirm] = React.useState(false);
 
   async function clearAllSubjects() {
-    if (!col) return;
+    if (!col) { toast('Firebase ready nahi hai!', 'error'); return; }
+    setClearConfirm(false);
     try {
       const snap = await col.get();
-      if (snap.empty) { toast('Koi subject nahi hai abhi!', 'error'); setClearConfirm(false); return; }
-      const batch = db.batch();
-      snap.docs.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-      toast('\uD83D\uDDD1\uFE0F Saare ' + snap.size + ' subjects delete ho gaye!', 'error');
-      setClearConfirm(false);
+      if (snap.empty) { toast('Koi subject nahi hai abhi!', 'error'); return; }
+      const count = snap.size;
+      await Promise.all(snap.docs.map(d => d.ref.delete()));
+      toast('🗑️ Saare ' + count + ' subjects delete ho gaye!', 'error');
     } catch(e) {
       toast('Delete failed: ' + e.message, 'error');
-      setClearConfirm(false);
     }
   }
 
