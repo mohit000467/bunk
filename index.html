@@ -1872,40 +1872,57 @@ function App() {
     }
   }
 
-  // On mount: check BOTH localStorage AND chrome.storage for pending sync data
+  // On mount: check chrome.storage (extension) AND localStorage for pending sync
   useEffect(()=>{
     function tryLoad(data) {
       if (!data) return false;
       try {
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-        if (parsed && (parsed.subjects || parsed.data)) {
-          console.log('[BunkPlanner] Pending sync found:', parsed.type, parsed.subjects?.length);
-          setTimeout(() => processSyncPayload(parsed), 600);
+        if (parsed && Array.isArray(parsed.subjects) && parsed.subjects.length > 0) {
+          console.log('[BunkPlanner] Sync data found! Subjects:', parsed.subjects.length, 'Type:', parsed.type);
+          setTimeout(() => processSyncPayload(parsed), 800);
           return true;
         }
-      } catch(e) { console.error('[BunkPlanner] parse error:', e); }
+      } catch(e) { console.error('[BunkPlanner] Parse error:', e); }
       return false;
     }
 
-    // Check localStorage first
-    const lsPending = localStorage.getItem('bp_pending_sync');
-    if (lsPending) {
-      localStorage.removeItem('bp_pending_sync');
-      if (tryLoad(lsPending)) return;
-    }
-
-    // Check chrome.storage (set by extension background.js)
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+    // Method 1: chrome.storage (set by extension background.js — most reliable)
+    function checkChromeStorage() {
+      if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) return false;
       try {
         chrome.runtime.sendMessage({ action: 'getPendingData' }, (resp) => {
-          if (chrome.runtime.lastError) return; // extension not installed
+          if (chrome.runtime.lastError) {
+            // Extension not installed or message failed — try localStorage
+            checkLocalStorage();
+            return;
+          }
           if (resp && resp.success && resp.data) {
             chrome.runtime.sendMessage({ action: 'clearPendingData' });
             tryLoad(resp.data);
+          } else {
+            checkLocalStorage();
           }
         });
-      } catch(e) { /* extension not installed, ignore */ }
+        return true;
+      } catch(e) {
+        checkLocalStorage();
+        return false;
+      }
     }
+
+    // Method 2: localStorage fallback
+    function checkLocalStorage() {
+      const pending = localStorage.getItem('bp_pending_sync');
+      if (pending) {
+        localStorage.removeItem('bp_pending_sync');
+        tryLoad(pending);
+      }
+    }
+
+    // Try chrome.storage first, fallback to localStorage
+    if (!checkChromeStorage()) checkLocalStorage();
+
   // eslint-disable-next-line
   }, []);
 
