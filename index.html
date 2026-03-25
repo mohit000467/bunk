@@ -1541,36 +1541,73 @@ function SyncBanner({ subjects, user, onDone, onCancel }) {
 
 
 // ══════════════════════════════════════════════════════════════
-//  AutoFetchBanner — One-click CyberVidya fetch card
+//  AutoFetchBanner — One-click CyberVidya fetch card v11
 // ══════════════════════════════════════════════════════════════
 function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
-  // Own independent detection (checks both marker IDs)
+  // Own independent detection — checks BOTH marker IDs
   const [extInstalled, setExtInstalled] = useState(() =>
     !!(document.getElementById('bunkplanner-extension-installed') ||
        document.getElementById('bpp-ext-marker'))
   );
-  const [phase, setPhase] = useState('idle'); // idle|waiting|error
+  // phase: 'idle' | 'opening' | 'scraping' | 'done' | 'error'
+  const [phase, setPhase] = useState('idle');
+  const [statusMsg, setStatusMsg] = useState('');
+  const phaseRef = React.useRef('idle');
 
-  // Poll for extension marker — keeps updating even after banner mounts
+  function updatePhase(p) { phaseRef.current = p; setPhase(p); }
+
+  // ── Poll for extension marker (document_start means it's injected early) ──
   useEffect(() => {
-    if (extProp || extInstalled) { setExtInstalled(true); return; }
+    function check() {
+      return !!(
+        document.getElementById('bunkplanner-extension-installed') ||
+        document.getElementById('bpp-ext-marker')
+      );
+    }
+    if (extProp || check()) { setExtInstalled(true); return; }
     let n = 0;
     const iv = setInterval(() => {
       n++;
-      if (document.getElementById('bunkplanner-extension-installed') ||
-          document.getElementById('bpp-ext-marker')) {
-        setExtInstalled(true); clearInterval(iv);
-      } else if (n >= 75) clearInterval(iv); // 30s
+      if (check()) { setExtInstalled(true); clearInterval(iv); return; }
+      if (n >= 100) clearInterval(iv); // 40s max
     }, 400);
     return () => clearInterval(iv);
   }, [extProp]);
 
-  // When extProp updates from parent, sync it
   useEffect(() => { if (extProp) setExtInstalled(true); }, [extProp]);
 
-  // Watch localStorage for incoming data (extension writes here after scrape)
+  // ── Listen for status updates from background via bridge ──
   useEffect(() => {
-    if (phase !== 'waiting') return;
+    function onStatus(e) {
+      const { status, message, count } = e.detail || {};
+      console.log('[AutoFetchBanner] status:', status, message);
+      if (status === 'opening')  { updatePhase('opening');  setStatusMsg('CyberVidya khul raha hai...'); }
+      if (status === 'scraping') { updatePhase('scraping'); setStatusMsg('Attendance scrape ho rahi hai...'); }
+      if (status === 'done')     { updatePhase('done');     setStatusMsg(`${count || ''} subjects ready!`); }
+      if (status === 'error')    { updatePhase('error');    setStatusMsg(message || 'Kuch error aa gaya. Retry karo.'); }
+    }
+    window.addEventListener('bpp-autofetch-status', onStatus);
+    return () => window.removeEventListener('bpp-autofetch-status', onStatus);
+  }, []);
+
+  // ── Listen for final data (CustomEvent from bridge/injection) ──
+  useEffect(() => {
+    function onSync(e) {
+      if (!['opening','scraping','waiting','done'].includes(phaseRef.current)) return;
+      const subs = ((e.detail || {}).subjects || []).filter(s => s.name && s.conducted > 0);
+      if (subs.length > 0) {
+        updatePhase('idle');
+        setStatusMsg('');
+        onDataReceived(subs);
+      }
+    }
+    window.addEventListener('bunkplanner-sync', onSync);
+    return () => window.removeEventListener('bunkplanner-sync', onSync);
+  }, [onDataReceived]);
+
+  // ── Polling fallback for localStorage ──
+  useEffect(() => {
+    if (!['opening','scraping','waiting'].includes(phase)) return;
     let n = 0;
     const iv = setInterval(() => {
       n++;
@@ -1581,46 +1618,52 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
         try {
           const parsed = JSON.parse(raw);
           const subs = (parsed.subjects || []).filter(s => s.name && s.conducted > 0);
-          if (subs.length > 0) { setPhase('idle'); onDataReceived(subs); return; }
+          if (subs.length > 0) { updatePhase('idle'); setStatusMsg(''); onDataReceived(subs); return; }
         } catch(e) {}
       }
-      if (n >= 75) { // 45s timeout
-        setPhase('error');
-      }
+      if (n >= 90) { updatePhase('error'); setStatusMsg('Timeout. CyberVidya pe login karo aur retry karo.'); clearInterval(iv); }
     }, 600);
     return () => clearInterval(iv);
   }, [phase]);
 
-  // Also listen for the CustomEvent fired by bridge/background injection
-  useEffect(() => {
-    function onSync(e) {
-      if (phase !== 'waiting') return;
-      const subs = ((e.detail || {}).subjects || []).filter(s => s.name && s.conducted > 0);
-      if (subs.length > 0) { setPhase('idle'); onDataReceived(subs); }
-    }
-    window.addEventListener('bunkplanner-sync', onSync);
-    return () => window.removeEventListener('bunkplanner-sync', onSync);
-  }, [phase]);
-
   function handleFetch() {
-    setPhase('waiting');
-    // Fire the event that bridge.js listens to
+    if (!extInstalled) return;
+    updatePhase('opening');
+    setStatusMsg('CyberVidya khul raha hai...');
+    // Signal bridge.js → background.js → open CyberVidya tab & scrape
     window.dispatchEvent(new CustomEvent('bpp-open-cybervidya', { detail: { returnUrl: window.location.href } }));
-    // Also open CyberVidya directly (fallback if bridge can't intercept)
-    window.open('https://kiet.cybervidya.net/attendance/my-attendance', '_blank');
   }
+
+  const isLoading = ['opening','scraping','waiting'].includes(phase);
+
+  const stepLabels = [
+    { n:'1', l:'Click karo',     active: phase !== 'idle' },
+    { n:'2', l:'CyberVidya',     active: phase === 'opening' || phase === 'scraping' },
+    { n:'3', l:'Auto scrape',    active: phase === 'scraping' },
+    { n:'4', l:'Import karo',    active: phase === 'done' },
+  ];
 
   return (
     <div className="cv-fetch-banner">
       <div className="cv-banner-inner">
-        <div className="cv-banner-icon">🎓</div>
+        <div className="cv-banner-icon" style={{fontSize: isLoading ? '28px' : '32px'}}>
+          {isLoading ? '⏳' : phase === 'done' ? '✅' : phase === 'error' ? '❌' : '🎓'}
+        </div>
         <div className="cv-banner-text">
-          <div className="cv-banner-title">Attendance Fetch karo CyberVidya se</div>
-          <div className="cv-banner-sub">Ek click mein sabhi subjects ki attendance auto-import ho jayegi!</div>
+          <div className="cv-banner-title">
+            {phase === 'error' ? 'Kuch galat hua 😅' :
+             phase === 'done'  ? 'Data ready hai! 🎉' :
+             'Attendance Fetch karo CyberVidya se'}
+          </div>
+          <div className="cv-banner-sub">
+            {statusMsg || 'Ek click mein sabhi subjects ki attendance auto-import ho jayegi!'}
+          </div>
           <div className="cv-banner-steps">
-            {[['1','Click karo'],['2','CyberVidya opens'],['3','Auto scrape'],['4','Import karo']].map(([n,l],i,a)=>(
+            {stepLabels.map(({n, l, active}, i, a) => (
               <React.Fragment key={n}>
-                <div className="cv-step"><span>{n}</span> {l}</div>
+                <div className="cv-step" style={{opacity: active ? 1 : 0.45, fontWeight: active ? 700 : 400}}>
+                  <span>{n}</span> {l}
+                </div>
                 {i < a.length-1 && <span className="cv-step-arrow">→</span>}
               </React.Fragment>
             ))}
@@ -1640,29 +1683,24 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
           </button>
         )}
 
-        {phase === 'waiting' && (
+        {isLoading && (
           <div className="cv-fetching-state">
             <span className="cv-dot"/><span className="cv-dot"/><span className="cv-dot"/>
-            <span>CyberVidya se data aa raha hai...</span>
           </div>
         )}
 
         {phase === 'error' && (
-          <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'flex-end',flexShrink:0}}>
-            <div style={{fontSize:'12px',color:'var(--red)',maxWidth:'200px',textAlign:'right'}}>
-              Timeout. Login karo CyberVidya pe aur retry karo.
-            </div>
-            <button className="btn btn-ghost" style={{padding:'6px 14px',fontSize:'12px'}} onClick={()=>setPhase('idle')}>
-              🔄 Retry
-            </button>
-          </div>
+          <button className="btn btn-ghost" style={{padding:'8px 16px',fontSize:'13px',flexShrink:0}}
+            onClick={() => { updatePhase('idle'); setStatusMsg(''); }}>
+            🔄 Retry
+          </button>
         )}
       </div>
 
       {phase === 'idle' && !extInstalled && (
         <div className="cv-no-ext">
           ⚠️ <strong>Extension install nahi hai.</strong>{' '}
-          Pehle BunkPlanner Chrome Extension install karo — phir ye button kaam karega.
+          Pehle <strong>extension_v11.zip</strong> install karo brave://extensions/ mein — phir page reload karo.
         </div>
       )}
     </div>
