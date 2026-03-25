@@ -250,13 +250,13 @@ const sColor    = s => s==='safe'?'var(--green)':s==='risk'?'var(--yellow)':'var
 const canBunk   = (c,a,t) => { const m=Math.floor((a*100/t)-c); return m>0?m:0; };
 const needAtt   = (c,a,t) => { if(t>=100)return 999; const x=Math.ceil((t*c-100*a)/(100-t)); return x>0?x:0; };
 const motivate  = (p,t,b) => {
-  if(p===0) return '📚 Pehle class toh le bhai...';
-  if(p>=t+20) return '😎 Bhai tu safe! '+b+' aur bunk maar!';
-  if(p>=t+10) return '🎯 Solid! Thoda bunk room hai — chill!';
-  if(p>=t)    return '✅ Target pe hai. Ek zyada bunk mat maarna!';
-  if(p>=t-10) return '⚠️ Risky! Classes attend kar warna short!';
-  if(p>=t-20) return '😬 Danger! Padh le warna short 💀';
-  return '🚨 SOS! Attendance badhao — exam nahi de payega!';
+  if(p===0) return '📚 Attend at least one class first...';
+  if(p>=t+20) return '😎 You\'re safe! You can skip '+b+' more classes!';
+  if(p>=t+10) return '🎯 Solid! You have some room to skip — chill!';
+  if(p>=t)    return '✅ On target. Don\'t skip even one more!';
+  if(p>=t-10) return '⚠️ Risky! Attend classes or you\'ll be short!';
+  if(p>=t-20) return '😬 Danger! Attend classes or you\'ll be short 💀';
+  return '🚨 SOS! Improve attendance — you may miss exams!';
 };
 
 let _tid=0, _add=null;
@@ -348,10 +348,10 @@ function AuthScreen({onAuth}) {
         onAuth(c.user);
       }
     } catch(err) {
-      const m = err.code==='auth/user-not-found'       ? 'Is email pe koi account nahi hai' :
-                err.code==='auth/wrong-password'       ? 'Wrong password bhai 🙈' :
+      const m = err.code==='auth/user-not-found'       ? 'No account found with this email' :
+                err.code==='auth/wrong-password'       ? 'Wrong password 🙈' :
                 err.code==='auth/email-already-in-use' ? 'Email already registered' :
-                err.code==='auth/too-many-requests'    ? 'Too many attempts. Wait karo!' :
+                err.code==='auth/too-many-requests'    ? 'Too many attempts. Please wait!' :
                 err.code==='auth/invalid-email'        ? 'Invalid email format' :
                 err.message;
       toast(m,'error');
@@ -377,11 +377,11 @@ function AuthScreen({onAuth}) {
               <div style={{textAlign:'center',padding:'10px 0'}}>
                 <div style={{fontSize:'48px',marginBottom:'12px'}}>📧</div>
                 <div style={{fontFamily:'Syne,sans-serif',fontSize:'18px',fontWeight:800,color:'var(--green)',marginBottom:'8px'}}>
-                  Email Bhej Diya!
+                  Email Sent!
                 </div>
                 <div style={{fontSize:'13px',color:'var(--text2)',lineHeight:'1.7',marginBottom:'20px'}}>
-                  <strong style={{color:'var(--text)'}}>{email}</strong> pe password reset link bheja gaya hai.<br/>
-                  Inbox check karo (Spam bhi dekh lena 😄)
+                  A password reset link has been sent to <strong style={{color:'var(--text)'}}>{email}</strong>.<br/>
+                  Check your inbox (including Spam 😄)
                 </div>
                 <button className="btn btn-primary btn-full" onClick={()=>switchMode('login')}>
                   🔑 Login Pe Wapas Jao
@@ -392,7 +392,7 @@ function AuthScreen({onAuth}) {
                 <div style={{textAlign:'center',marginBottom:'16px'}}>
                   <div style={{fontSize:'36px',marginBottom:'8px'}}>🔐</div>
                   <div style={{fontFamily:'Syne,sans-serif',fontSize:'16px',fontWeight:700,color:'var(--text)'}}>Password Reset</div>
-                  <div style={{fontSize:'12px',color:'var(--text2)',marginTop:'4px'}}>Email daalo — reset link bhej denge</div>
+                  <div style={{fontSize:'12px',color:'var(--text2)',marginTop:'4px'}}>Enter your email — we'll send a reset link</div>
                 </div>
                 <div className="input-wrap">
                   <label className="input-label">Registered Email</label>
@@ -402,11 +402,11 @@ function AuthScreen({onAuth}) {
                   {errors.email && <span className="input-hint">{errors.email}</span>}
                 </div>
                 <button className="btn btn-primary btn-full" onClick={submit} disabled={loading}>
-                  {loading ? '⏳ Sending...' : '📧 Reset Link Bhejo'}
+                  {loading ? '⏳ Sending...' : '📧 Send Reset Link'}
                 </button>
                 <button onClick={()=>switchMode('login')}
                   style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:'12px',marginTop:'8px',width:'100%'}}>
-                  ← Login pe wapas jao
+                  ← Back to Login
                 </button>
               </>
             )}
@@ -603,14 +603,14 @@ function Subjects({user}) {
   const [clearConfirm, setClearConfirm] = useState(false);
 
   async function clearAllSubjects() {
-    if (!col) { toast('Firebase ready nahi hai!', 'error'); return; }
+    if (!col) { toast('Firebase not ready!', 'error'); return; }
     setClearConfirm(false);
     try {
       const snap = await col.get();
-      if (snap.empty) { toast('Koi subject nahi hai abhi!', 'error'); return; }
+      if (snap.empty) { toast('No subjects found!', 'error'); return; }
       const count = snap.size;
       await Promise.all(snap.docs.map(d => d.ref.delete()));
-      toast('\uD83D\uDDD1\uFE0F Saare ' + count + ' subjects delete ho gaye!', 'error');
+      toast('🗑️ All ' + count + ' subjects deleted!', 'error');
     } catch(e) {
       toast('Delete failed: ' + e.message, 'error');
     }
@@ -859,7 +859,7 @@ function Subjects({user}) {
               fontSize:'13px', fontWeight:600, cursor:'pointer',
               fontFamily:'system-ui,sans-serif'
             }}
-          >🗑️ Saare Subjects Remove Karo</button>
+          >🗑️ Remove All Subjects</button>
         </div>
       )}
 
@@ -869,11 +869,11 @@ function Subjects({user}) {
           <div className="modal" style={{maxWidth:'380px',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
             <div style={{fontSize:'52px',marginBottom:'12px'}}>🗑️</div>
             <div style={{fontFamily:'Syne,sans-serif',fontSize:'20px',fontWeight:800,color:'var(--red)',marginBottom:'8px'}}>
-              Saare Subjects Delete Karein?
+              Remove All Subjects?
             </div>
             <div style={{fontSize:'13px',color:'var(--text2)',lineHeight:'1.7',marginBottom:'24px'}}>
-              Ye action <strong style={{color:'var(--red)'}}>undo nahi ho sakta.</strong><br/>
-              Saare subjects permanently delete ho jayenge.
+              This action <strong style={{color:'var(--red)'}}>cannot be undone.</strong><br/>
+              All subjects will be permanently deleted.
             </div>
             <div style={{display:'flex',gap:'12px'}}>
               <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setClearConfirm(false)}>Cancel</button>
@@ -881,7 +881,7 @@ function Subjects({user}) {
                 className="btn"
                 style={{flex:1,background:'var(--red)',color:'white',border:'none'}}
                 onClick={clearAllSubjects}
-              >🗑️ Haan, Delete Karo</button>
+              >🗑️ Yes, Delete All</button>
             </div>
           </div>
         </div>
@@ -1055,10 +1055,10 @@ function ImportSection({ col, onImported }) {
   const [savedCount, setSavedCount] = useState(0);
 
   function handleParse() {
-    if (!raw.trim()) { toast('Pehle data paste karo!','error'); return; }
+    if (!raw.trim()) { toast('Please paste data first!','error'); return; }
     const data = parseCyberVidyaData(raw);
     if (data.length === 0) {
-      toast('Data samajh nahi aaya 😅 Neeche wala guide dekho!','error'); return;
+      toast('Could not parse data 😅 Check the guide below!','error'); return;
     }
     setParsed(data);
     setSelected(new Set(data.map((_,i)=>i))); // select all by default
@@ -1075,7 +1075,7 @@ function ImportSection({ col, onImported }) {
 
   async function handleImport() {
     if (!col) { toast('Firebase not connected!','error'); return; }
-    if (selected.size === 0) { toast('Koi subject select nahi kiya!','error'); return; }
+    if (selected.size === 0) { toast('No subjects selected!','error'); return; }
     setSaving(true);
 
     try {
@@ -1123,10 +1123,10 @@ function ImportSection({ col, onImported }) {
       }}>
         <div>
           <div style={{fontFamily:'Syne,sans-serif',fontSize:'15px',fontWeight:700,marginBottom:'3px'}}>
-            📥 CyberVidya se Import karo
+            📥 Import from CyberVidya
           </div>
           <div style={{fontSize:'12px',color:'var(--text2)'}}>
-            Attendance data copy karo aur ek click mein sab subjects add ho jayenge!
+            Copy your attendance data and import all subjects in one click!
           </div>
         </div>
         <button className="btn btn-primary" style={{whiteSpace:'nowrap'}} onClick={()=>setOpen(true)}>
@@ -1154,7 +1154,7 @@ function ImportSection({ col, onImported }) {
 
             {/* ── STEP 1: PASTE ── */}
             {step===1 && <>
-              <div className="modal-title">📋 CyberVidya se Data Copy Karo</div>
+              <div className="modal-title">📋 Copy Data from CyberVidya</div>
 
               {/* HOW TO GUIDE */}
               <div style={{
@@ -1162,19 +1162,19 @@ function ImportSection({ col, onImported }) {
                 background:'rgba(124,106,247,0.08)', border:'1px solid rgba(124,106,247,0.2)',
                 fontSize:'13px', lineHeight:'1.7', color:'var(--text2)'
               }}>
-                <div style={{fontWeight:700,color:'var(--accent2)',marginBottom:'6px'}}>📌 Ye karo (3 steps only):</div>
-                <div>1️⃣ <a href="https://kiet.cybervidya.net/attendance/my-attendance" target="_blank" style={{color:'var(--accent2)'}}>CyberVidya Attendance Page</a> kholo</div>
-                <div>2️⃣ Pure table ko <strong style={{color:'var(--text)'}}>Ctrl+A → Ctrl+C</strong> karo</div>
-                <div>3️⃣ Neeche box mein <strong style={{color:'var(--text)'}}>Ctrl+V</strong> karo → Parse click karo</div>
-                <div style={{marginTop:'6px',padding:'8px',background:'rgba(52,211,153,0.08)',borderRadius:'6px',fontSize:'11px',color:'var(--green)'}}>✅ Same naam wale subjects (Theory + Lab) automatically alag ho jayenge!</div>
+                <div style={{fontWeight:700,color:'var(--accent2)',marginBottom:'6px'}}>📌 Follow these steps:</div>
+                <div>1️⃣ Open <a href="https://kiet.cybervidya.net/attendance/my-attendance" target="_blank" style={{color:'var(--accent2)'}}>CyberVidya Attendance Page</a></div>
+                <div>2️⃣ Select the full table using <strong style={{color:'var(--text)'}}>Ctrl+A → Ctrl+C</strong></div>
+                <div>3️⃣ Paste in the box below using <strong style={{color:'var(--text)'}}>Ctrl+V</strong> → then click Parse</div>
+                <div style={{marginTop:'6px',padding:'8px',background:'rgba(52,211,153,0.08)',borderRadius:'6px',fontSize:'11px',color:'var(--green)'}}>✅ Subjects with the same name (Theory + Lab) will be separated automatically!</div>
               </div>
 
               <div className="input-wrap" style={{marginBottom:'14px'}}>
-                <label className="input-label">Copied Data Paste Karo Yahan 👇</label>
+                <label className="input-label">Paste Copied Data Here 👇</label>
                 <textarea
                   value={raw}
                   onChange={e=>setRaw(e.target.value)}
-                  placeholder={`CyberVidya se Ctrl+A → Ctrl+C karke yahan paste karo!\n\nExample format:\n1ANN and Machine Learning\nBLENDEDCS303B-...CS4C1642483%\n\n7Design and Analysis of Al...\nTHEORYCS401L-...CS4C1752588%\n\n8Design and Analysis of Al...\nPRACTICALCS401P-...CS4C1642483%\n(Ye dono alag subjects ban jayenge automatically!)`}
+                  placeholder={`Press Ctrl+A → Ctrl+C on CyberVidya and paste here!\n\nExample format:\n1ANN and Machine Learning\nBLENDEDCS303B-...CS4C1642483%\n\n7Design and Analysis of Al...\nTHEORYCS401L-...CS4C1752588%\n\n8Design and Analysis of Al...\nPRACTICALCS401P-...CS4C1642483%\n(Same-named subjects like Theory + Lab are auto-split!)`}
                   style={{
                     width:'100%', minHeight:'160px', padding:'12px 14px',
                     background:'var(--surface)', border:'1.5px solid var(--border)',
@@ -1197,14 +1197,14 @@ function ImportSection({ col, onImported }) {
 
             {/* ── STEP 2: PREVIEW ── */}
             {step===2 && <>
-              <div className="modal-title">✅ {parsed.length} Subjects Mila — Select Karo</div>
+              <div className="modal-title">✅ {parsed.length} Subjects Found — Select to Import</div>
 
               <div style={{
                 padding:'10px 14px', marginBottom:'14px', borderRadius:'8px',
                 background:'rgba(52,211,153,0.08)', border:'1px solid rgba(52,211,153,0.2)',
                 fontSize:'13px', color:'var(--green)'
               }}>
-                🎉 {parsed.length} subjects parse ho gaye! Jo sync karne hain wo select karo.
+                🎉 {parsed.length} subjects found! Select the ones you want to import.
               </div>
 
               {/* SELECT ALL / NONE */}
@@ -1288,9 +1288,9 @@ function ImportSection({ col, onImported }) {
                   Import Complete!
                 </div>
                 <div style={{fontSize:'14px',color:'var(--text2)',lineHeight:'1.7'}}>
-                  {savedCount.added > 0 && <div>✅ <strong>{savedCount.added}</strong> new subject{savedCount.added!==1?'s':''} add kiye</div>}
-                  {savedCount.updated > 0 && <div>🔄 <strong>{savedCount.updated}</strong> subject{savedCount.updated!==1?'s':''} update kiye</div>}
-                  <div style={{marginTop:'8px',color:'var(--text3)',fontSize:'12px'}}>Cloud pe sync ho gaya! Kisi bhi device pe dekh sakte ho ☁️</div>
+                  {savedCount.added > 0 && <div>✅ <strong>{savedCount.added}</strong> new subject{savedCount.added!==1?'s':''} added</div>}
+                  {savedCount.updated > 0 && <div>🔄 <strong>{savedCount.updated}</strong> subject{savedCount.updated!==1?'s':''} updated</div>}
+                  <div style={{marginTop:'8px',color:'var(--text3)',fontSize:'12px'}}>Synced to cloud! View on any device ☁️</div>
                 </div>
               </div>
               <button className="btn btn-primary btn-full" style={{marginTop:'16px'}} onClick={reset}>
@@ -1431,7 +1431,7 @@ function SyncBanner({ subjects, user, onDone, onCancel }) {
               <div>
                 <div className="ext-sync-title">CyberVidya Sync!</div>
                 <div className="ext-sync-sub">
-                  {subjects.length} subjects fetched — select karo aur import karo
+                  {subjects.length} subjects fetched — select and import
                 </div>
               </div>
               <button onClick={onCancel} style={{
@@ -1581,10 +1581,10 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
     function onStatus(e) {
       const { status, message, count } = e.detail || {};
       console.log('[AutoFetchBanner] status:', status, message);
-      if (status === 'opening')  { updatePhase('opening');  setStatusMsg('CyberVidya khul raha hai...'); }
-      if (status === 'scraping') { updatePhase('scraping'); setStatusMsg('Attendance scrape ho rahi hai...'); }
+      if (status === 'opening')  { updatePhase('opening');  setStatusMsg('Opening CyberVidya...'); }
+      if (status === 'scraping') { updatePhase('scraping'); setStatusMsg('Scraping attendance data...'); }
       if (status === 'done')     { updatePhase('done');     setStatusMsg(`${count || ''} subjects ready!`); }
-      if (status === 'error')    { updatePhase('error');    setStatusMsg(message || 'Kuch error aa gaya. Retry karo.'); }
+      if (status === 'error')    { updatePhase('error');    setStatusMsg(message || 'An error occurred. Please retry.'); }
     }
     window.addEventListener('bpp-autofetch-status', onStatus);
     return () => window.removeEventListener('bpp-autofetch-status', onStatus);
@@ -1621,7 +1621,7 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
           if (subs.length > 0) { updatePhase('idle'); setStatusMsg(''); onDataReceived(subs); return; }
         } catch(e) {}
       }
-      if (n >= 90) { updatePhase('error'); setStatusMsg('Timeout. CyberVidya pe login karo aur retry karo.'); clearInterval(iv); }
+      if (n >= 90) { updatePhase('error'); setStatusMsg('Timeout. Please login to CyberVidya and retry.'); clearInterval(iv); }
     }, 600);
     return () => clearInterval(iv);
   }, [phase]);
@@ -1629,7 +1629,7 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
   function handleFetch() {
     if (!extInstalled) return;
     updatePhase('opening');
-    setStatusMsg('CyberVidya khul raha hai...');
+    setStatusMsg('Opening CyberVidya...');
     // Signal bridge.js → background.js → open CyberVidya tab & scrape
     window.dispatchEvent(new CustomEvent('bpp-open-cybervidya', { detail: { returnUrl: window.location.href } }));
   }
@@ -1637,10 +1637,10 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
   const isLoading = ['opening','scraping','waiting'].includes(phase);
 
   const stepLabels = [
-    { n:'1', l:'Click karo',     active: phase !== 'idle' },
+    { n:'1', l:'Click',     active: phase !== 'idle' },
     { n:'2', l:'CyberVidya',     active: phase === 'opening' || phase === 'scraping' },
     { n:'3', l:'Auto scrape',    active: phase === 'scraping' },
-    { n:'4', l:'Import karo',    active: phase === 'done' },
+    { n:'4', l:'Import',    active: phase === 'done' },
   ];
 
   return (
@@ -1651,12 +1651,12 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
         </div>
         <div className="cv-banner-text">
           <div className="cv-banner-title">
-            {phase === 'error' ? 'Kuch galat hua 😅' :
-             phase === 'done'  ? 'Data ready hai! 🎉' :
-             'Attendance Fetch karo CyberVidya se'}
+            {phase === 'error' ? 'Something went wrong 😅' :
+             phase === 'done'  ? 'Data is ready! 🎉' :
+             'Fetch Attendance from CyberVidya'}
           </div>
           <div className="cv-banner-sub">
-            {statusMsg || 'Ek click mein sabhi subjects ki attendance auto-import ho jayegi!'}
+            {statusMsg || 'Auto-import all your subjects\' attendance in one click!'}
           </div>
           <div className="cv-banner-steps">
             {stepLabels.map(({n, l, active}, i, a) => (
@@ -1675,7 +1675,7 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
             className="cv-fetch-btn"
             onClick={handleFetch}
             disabled={!extInstalled}
-            title={!extInstalled ? 'Extension install karo pehle' : 'CyberVidya se attendance fetch karo'}
+            title={!extInstalled ? 'Install the extension first' : 'Fetch attendance from CyberVidya'}
           >
             <span className="cv-fetch-btn-shine"/>
             <span style={{fontSize:'16px'}}>{extInstalled ? '⚡' : '🔌'}</span>
@@ -1699,8 +1699,8 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
 
       {phase === 'idle' && !extInstalled && (
         <div className="cv-no-ext">
-          ⚠️ <strong>Extension install nahi hai.</strong>{' '}
-          Pehle <strong>extension_v11.zip</strong> install karo brave://extensions/ mein — phir page reload karo.
+          ⚠️ <strong>Extension not installed.</strong>{' '}
+          Install <strong>extension_v11.zip</strong> from brave://extensions/ first — then reload the page.
         </div>
       )}
     </div>
@@ -1786,7 +1786,7 @@ function App() {
       toast(`🎓 ${subjects.length} subjects fetched from CyberVidya!`, 'success');
     } else {
       console.warn('[BunkPlanner] processSyncPayload: no valid subjects parsed', detail);
-      toast('CyberVidya se data parse nahi hua 😅', 'error');
+      toast('Could not parse CyberVidya data 😅', 'error');
     }
   }
 
@@ -1859,7 +1859,7 @@ function App() {
   async function logout() {
     await auth.signOut();
     setUser(null);
-    toast('Logged out! Bye 👋','info');
+    toast('Logged out! See you 👋','info');
   }
 
 
@@ -1912,7 +1912,7 @@ function App() {
         <div className="hero">
           <div className="hero-badge">👋 Welcome, {displayName}!</div>
           <h1 className="hero-title">Bunk Smarter,<br/>Not Harder</h1>
-          <p className="hero-sub">Data syncs real-time across all devices.<br/>Laptop pe add karo, phone pe dekho! ☁️</p>
+          <p className="hero-sub">Data syncs real-time across all devices.<br/>Add on laptop, view on phone! ☁️</p>
         </div>
         <AutoFetchBanner
           extInstalled={extInstalled}
