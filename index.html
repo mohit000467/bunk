@@ -2128,33 +2128,27 @@ const AVATAR_EMOJIS = ['🎓','😎','🚀','⚡','🔥','🎯','💎','🦁','�
 
 function ProfileDropdown({ user, displayName, initials, profileData, setProfileData, onClose, onLogout }) {
   const [editing, setEditing] = useState(false);
-  const pd = profileData || {};
   const [form, setForm] = useState({
-    displayName: pd.displayName || displayName || '',
-    college:     pd.college     || '',
-    branch:      pd.branch      || '',
-    year:        pd.year        || '',
-    rollNo:      pd.rollNo      || '',
-    avatarEmoji: pd.avatarEmoji || '',
-    avatarColor: pd.avatarColor || '#7c6af7',
+    displayName: profileData.displayName || displayName || '',
+    college:     profileData.college     || '',
+    branch:      profileData.branch      || '',
+    year:        profileData.year        || '',
+    rollNo:      profileData.rollNo      || '',
+    avatarEmoji: profileData.avatarEmoji || '',
+    avatarColor: profileData.avatarColor || '#7c6af7',
   });
 
-  async function save() {
+  function save() {
     const updated = { ...profileData, ...form };
-    // Save to Firestore — tied to this user's UID
-    try {
-      await db.collection('users').doc(user.uid).collection('profile').doc('data').set(updated, { merge: true });
-      setProfileData(updated);
-      setEditing(false);
-      toast('Profile saved! ✅', 'success');
-    } catch(e) {
-      toast('Save failed. Check your connection.', 'error');
-    }
+    localStorage.setItem('bpp_profile', JSON.stringify(updated));
+    setProfileData(updated);
+    setEditing(false);
+    toast('Profile saved! ✅', 'success');
   }
 
-  const shownName  = (profileData && profileData.displayName) || displayName;
-  const shownEmoji = (profileData && profileData.avatarEmoji) || '';
-  const shownColor = (profileData && profileData.avatarColor) || '#7c6af7';
+  const shownName = profileData.displayName || displayName;
+  const shownEmoji = profileData.avatarEmoji || '';
+  const shownColor = profileData.avatarColor || '#7c6af7';
 
   return (
     <div className="profile-dropdown">
@@ -2166,7 +2160,7 @@ function ProfileDropdown({ user, displayName, initials, profileData, setProfileD
         <div style={{flex:1,minWidth:0}}>
           <div className="profile-name-big">{shownName}</div>
           <div className="profile-email-small">{user.email}</div>
-          {profileData && profileData.college && (
+          {profileData.college && (
             <div style={{fontSize:'11px',color:'var(--accent2)',marginTop:'3px',fontWeight:600}}>
               🏫 {profileData.college}
             </div>
@@ -2180,16 +2174,16 @@ function ProfileDropdown({ user, displayName, initials, profileData, setProfileD
           // ── View Mode ──
           <>
             {[
-              { icon:'🎓', label:'Branch', val: (profileData||{}).branch },
-              { icon:'📅', label:'Year',   val: (profileData||{}).year   },
-              { icon:'🪪', label:'Roll No',val: (profileData||{}).rollNo },
+              { icon:'🎓', label:'Branch', val: profileData.branch },
+              { icon:'📅', label:'Year',   val: profileData.year   },
+              { icon:'🪪', label:'Roll No',val: profileData.rollNo },
             ].map(({icon,label,val}) => val ? (
               <div className="profile-field" key={label}>
                 <div className="profile-field-label">{label}</div>
                 <div className="profile-field-value">{icon} {val}</div>
               </div>
             ) : null)}
-            {!(profileData&&profileData.branch) && !(profileData&&profileData.year) && !(profileData&&profileData.rollNo) && (
+            {!profileData.branch && !profileData.year && !profileData.rollNo && (
               <div style={{textAlign:'center',padding:'10px 0 6px',color:'var(--text3)',fontSize:'12px'}}>
                 No details added yet
               </div>
@@ -2288,9 +2282,9 @@ function App() {
   const [syncBanner, setSyncBanner] = useState(null);
   const [extInstalled, setExtInstalled] = useState(false);
   const [profileOpen,  setProfileOpen]  = useState(false);
-  // null = not loaded yet, {} = loaded but empty (new user)
-  const [profileData,  setProfileData]  = useState(null);
-  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileData,  setProfileData]  = useState(() => {
+    try { return JSON.parse(localStorage.getItem('bpp_profile') || '{}'); } catch(e) { return {}; }
+  });
 
   // Close profile dropdown on outside click
   useEffect(()=>{
@@ -2304,39 +2298,11 @@ function App() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [profileOpen]);
 
-  // Load this user's profile from Firestore (cloud — works across browsers/devices)
-  async function loadProfileFromFirestore(u) {
-    if (!u || !db) { setProfileData({}); return; }
-    setProfileLoading(true);
-    try {
-      const doc = await db.collection('users').doc(u.uid).collection('profile').doc('data').get();
-      if (doc.exists) {
-        setProfileData(doc.data() || {});
-      } else {
-        // Brand new user — empty profile
-        setProfileData({});
-      }
-    } catch(e) {
-      console.error('Profile load error:', e);
-      setProfileData({});
-    }
-    setProfileLoading(false);
-  }
-
   useEffect(()=>{
     const saved = localStorage.getItem('bpp_theme');
     if(saved) setDark(saved==='dark');
     if(firebaseReady) {
-      const unsub = auth.onAuthStateChanged(u => {
-        setUser(u||null);
-        if (u) {
-          // Always fetch fresh profile from Firestore for this specific user
-          loadProfileFromFirestore(u);
-        } else {
-          // Logged out — wipe profile completely
-          setProfileData(null);
-        }
-      });
+      const unsub = auth.onAuthStateChanged(u => setUser(u||null));
       return ()=>unsub();
     } else { setUser(null); }
   },[]);
@@ -2474,8 +2440,6 @@ function App() {
   },[dark]);
 
   async function logout() {
-    setProfileData(null);   // wipe profile state immediately
-    setProfileOpen(false);
     await auth.signOut();
     setUser(null);
     toast('Logged out! See you 👋','info');
@@ -2511,10 +2475,10 @@ function App() {
               className={`nav-avatar-btn ${profileOpen?'open':''}`}
               onClick={()=>setProfileOpen(p=>!p)}
             >
-              <div className="nav-avatar" style={{background:`linear-gradient(135deg,${(profileData&&profileData.avatarColor)||'var(--accent)'},var(--accent2))`}}>
-                {(profileData&&profileData.avatarEmoji) || initials}
+              <div className="nav-avatar" style={{background:`linear-gradient(135deg,${profileData.avatarColor||'var(--accent)'},var(--accent2))`}}>
+                {profileData.avatarEmoji || initials}
               </div>
-              <span className="nav-username">{(profileData&&profileData.displayName) || displayName}</span>
+              <span className="nav-username">{profileData.displayName || displayName}</span>
               <span className="nav-chevron">▾</span>
             </button>
             {profileOpen && (
@@ -2546,9 +2510,9 @@ function App() {
           </div>
           <h1 className="hero-title">Bunk Smarter,<br/>Not Harder</h1>
           <p className="hero-sub">Data syncs real-time across all devices.<br/>Add on laptop, view on phone! ☁️</p>
-          {profileData && (profileData.college || profileData.branch || profileData.year) && (
+          {(profileData.college || profileData.branch || profileData.year) && (
             <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'12px',marginTop:'16px',flexWrap:'wrap'}}>
-              {profileData && profileData.college && (
+              {profileData.college && (
                 <div style={{display:'flex',alignItems:'center',gap:'5px',fontSize:'12px',color:'var(--text3)',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'100px',padding:'4px 12px'}}>
                   🏫 <span style={{color:'var(--text2)',fontWeight:600}}>{profileData.college}</span>
                 </div>
