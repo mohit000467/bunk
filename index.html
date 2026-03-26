@@ -1302,23 +1302,6 @@ function Subjects({user}) {
 // ═══════════════════════════════════════════════════════
 
 function parseCyberVidyaData(raw) {
-  /*
-    KIET CyberVidya copy-paste format — supports:
-
-    FORMAT A (paired lines):
-      Line1: "1ANN and Machine Learning"
-      Line2: "BLENDEDCS303B-...CS4C1642483%"
-
-    FORMAT B (everything on one line per subject):
-      "1ANN and Machine LearningBLENDEDCS303B-...CS4C1642483%"
-
-    Numbers at end: Presents, Special, Lectures, Pct% — all jammed together
-    attended = Presents + Special,  conducted = Lectures
-
-    KEY FIX: Subjects with same name but different component
-    (e.g. "Design and Analysis of Al..." THEORY vs PRACTICAL)
-    get " (Lab)" appended to PRACTICAL so they don't collide.
-  */
   const results = [];
   if (!raw || !raw.trim()) return results;
 
@@ -1326,15 +1309,25 @@ function parseCyberVidyaData(raw) {
   const SKIP = /^(s\.?no\.?|course|component|variant|presents|special|lectures|attendance|%|course component|course variant|special attendance)$/i;
   const COMPONENT_RX = /^(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i;
 
+  function cleanDots(str) {
+    return str.replace(/\.+$/, ''); // ✅ FIX: only remove trailing dots safely
+  }
+
   function getNameWithSuffix(nameStr, dataLine) {
     const compMatch = dataLine.match(/^(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i);
     const component = compMatch ? compMatch[1].toUpperCase() : '';
-    let name = cleanName(nameStr.replace(/^\d+\s*/, '').trim().replace(/\.\.\.$/,'').trim());
+
+    let name = cleanName(
+      cleanDots(
+        nameStr.replace(/^\d+\s*/, '').trim()
+      )
+    );
+
     if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
     return name;
   }
 
-  // ── STRATEGY 1: Paired lines (CyberVidya Ctrl+A format) ─
+  // ── STRATEGY 1: Paired lines ─
   for (let i = 0; i < lines.length - 1; i++) {
     const nameLine = lines[i];
     const dataLine = lines[i + 1];
@@ -1342,7 +1335,10 @@ function parseCyberVidyaData(raw) {
     if (!/%$/.test(dataLine)) continue;
     if (!COMPONENT_RX.test(dataLine)) continue;
 
-    const nameStripped = nameLine.replace(/^\d+\s*/, '').trim().replace(/\.\.\.$/,'').trim();
+    const nameStripped = cleanDots(
+      nameLine.replace(/^\d+\s*/, '').trim()
+    );
+
     if (!nameStripped || nameStripped.length < 3) continue;
     if (SKIP.test(nameStripped) || COMPONENT_RX.test(nameStripped)) continue;
     if (!/[A-Za-z]{3,}/.test(nameStripped)) continue;
@@ -1352,20 +1348,25 @@ function parseCyberVidyaData(raw) {
 
     const attended = Math.min(nums.presents + nums.special, nums.lectures);
     const name = getNameWithSuffix(nameStripped, dataLine);
+
     results.push({ name, attended, conducted: nums.lectures });
     i++;
   }
 
-  // ── STRATEGY 2: Everything on ONE line per subject ───────
-  // Format: "1ANN and Machine LearningBLENDEDCS303B-...1642483%"
+  // ── STRATEGY 2: Single line ─
   if (results.length === 0) {
     for (const line of lines) {
       if (!/%$/.test(line)) continue;
+
       const compMatch = line.match(/(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i);
       if (!compMatch) continue;
 
       const compIdx = line.search(/(THEORY|PRACTICAL|BLENDED|LAB|TUTORIAL)/i);
-      let namePart = line.slice(0, compIdx).replace(/^\d+/, '').trim().replace(/\.\.\.$/,'').trim();
+
+      let namePart = cleanDots(
+        line.slice(0, compIdx).replace(/^\d+/, '').trim()
+      );
+
       if (!namePart || namePart.length < 3) continue;
 
       const component = compMatch[1].toUpperCase();
@@ -1373,34 +1374,39 @@ function parseCyberVidyaData(raw) {
       if (!nums) continue;
 
       const attended = Math.min(nums.presents + nums.special, nums.lectures);
+
       let name = cleanName(namePart);
       if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
+
       results.push({ name, attended, conducted: nums.lectures });
     }
   }
 
-  // ── STRATEGY 3: Space-separated fallback ────────────────
+  // ── STRATEGY 3: fallback ─
   if (results.length === 0) {
     const flat = raw.replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ');
     const rx = /(?:\d+\s+)?([A-Za-z][A-Za-z0-9&\-\s\.]{3,50}?)\s+(THEORY|PRACTICAL|BLENDED|LAB)\s+\S+\s+(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s+\d{1,3}%/gi;
     let m;
     while ((m = rx.exec(flat)) !== null) {
       const component = m[2].toUpperCase();
-      let name = cleanName(m[1]);
+      let name = cleanName(cleanDots(m[1]));
       if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
+
       const p = parseInt(m[3]), s = parseInt(m[4]), l = parseInt(m[5]);
       if (!name || l <= 0) continue;
+
       results.push({ name, attended: Math.min(p+s, l), conducted: l });
     }
   }
 
-  // ── DEDUPLICATE by exact name (after Lab suffix) ─────────
+  // ── DEDUP ─
   const seen = new Set();
   return results.filter(s => {
     if (!s.name || s.name.length < 2) return false;
     const k = s.name.toLowerCase();
     if (seen.has(k)) return false;
-    seen.add(k); return true;
+    seen.add(k);
+    return true;
   });
 }
 
