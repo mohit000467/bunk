@@ -609,7 +609,15 @@ function SubjectCard({subject, onEdit, onDelete, target}) {
 function Subjects({user}) {
   const [subjects,setSubjects] = useState([]);
   const [syncing,setSyncing]   = useState(true);
-  const TARGET = 75;
+  const [TARGET, setTargetRaw] = useState(() => {
+    const n = parseInt(localStorage.getItem('bpp_threshold'));
+    return (n >= 1 && n <= 100) ? n : 75;
+  });
+  function setTarget(v) {
+    const n = Math.min(100, Math.max(1, parseInt(v) || 75));
+    setTargetRaw(n);
+    localStorage.setItem('bpp_threshold', n);
+  }
   const [showAdd,setShowAdd]   = useState(false);
   const [editModal,setEdit]    = useState(null);
   const [form,setForm]         = useState({name:'',conducted:'',attended:''});
@@ -756,25 +764,91 @@ function Subjects({user}) {
           ))}
         </div>
 
-        {/* CHART */}
-        {subjects.length>=2 && (
-          <div className="glass trend-wrap" style={{animation:'fadeUp .4s ease'}}>
-            <div className="section-title" style={{marginBottom:'8px'}}>📈 Subject-wise Chart</div>
-            <div className="trend-bars">
-              {subjects.map((s,i)=>{
-                const p=calcAtt(s.conducted,s.attended), st=getStatus(p,TARGET), col=sColor(st);
-                return (
-                  <div key={i} className="trend-bar-col">
-                    <div className="trend-bar-pct" style={{color:col}}>{p.toFixed(0)}%</div>
-                    <div className="trend-bar" style={{height:`${(p/100)*80}%`,background:`linear-gradient(to top,${col}77,${col})`}} title={`${s.name}: ${p.toFixed(1)}%`}/>
-                    <div className="trend-bar-name">{s.name}</div>
-                  </div>
-                );
-              })}
+        {/* CHART — SVG bar chart, properly rendered */}
+        {subjects.length>=2 && (()=>{
+          const H=160, PAD_L=32, PAD_B=36, PAD_T=16, PAD_R=8;
+          const W_AVAIL = Math.max(subjects.length * 44, subjects.length * 44);
+          const barW = Math.max(18, Math.min(40, Math.floor((W_AVAIL - (subjects.length-1)*8) / subjects.length)));
+          const gap   = barW + 8;
+          const svgW  = PAD_L + subjects.length * gap - 8 + PAD_R;
+          const svgH  = H + PAD_T + PAD_B;
+          const yScale = v => PAD_T + H - (v / 100) * H;
+          const targetY = yScale(TARGET);
+          const gridLines = [0,25,50,75,100];
+          return (
+            <div className="glass trend-wrap" style={{animation:'fadeUp .4s ease',overflowX:'auto'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
+                <div className="section-title" style={{margin:0}}>📈 Subject-wise Chart</div>
+                <div style={{display:'flex',gap:'10px',fontSize:'10px',color:'var(--text3)'}}>
+                  <span style={{color:'var(--green)'}}>■ Safe</span>
+                  <span style={{color:'var(--yellow)'}}>■ Risk</span>
+                  <span style={{color:'var(--red)'}}>■ Danger</span>
+                  <span style={{color:'rgba(255,255,255,.4)'}}>-- Target</span>
+                </div>
+              </div>
+              <div style={{overflowX:'auto'}}>
+                <svg width={svgW} height={svgH} style={{display:'block',minWidth:'100%'}}>
+                  {/* Y-axis gridlines */}
+                  {gridLines.map(g => {
+                    const y = yScale(g);
+                    return (
+                      <g key={g}>
+                        <line x1={PAD_L} y1={y} x2={svgW-PAD_R} y2={y}
+                          stroke="rgba(255,255,255,.06)" strokeWidth="1"/>
+                        <text x={PAD_L-4} y={y+3} textAnchor="end"
+                          fill="rgba(255,255,255,.3)" fontSize="9">{g}%</text>
+                      </g>
+                    );
+                  })}
+                  {/* Target line */}
+                  <line x1={PAD_L} y1={targetY} x2={svgW-PAD_R} y2={targetY}
+                    stroke="rgba(255,255,255,.35)" strokeWidth="1.5" strokeDasharray="4,3"/>
+                  <text x={svgW-PAD_R+2} y={targetY+3} fill="rgba(255,255,255,.5)" fontSize="9">
+                    {TARGET}%
+                  </text>
+                  {/* Bars */}
+                  {subjects.map((s,i)=>{
+                    const p   = calcAtt(s.conducted, s.attended);
+                    const st  = getStatus(p, TARGET);
+                    const col = sColor(st);
+                    const bunk= canBunk(s.conducted,s.attended,TARGET);
+                    const nd  = needAtt(s.conducted,s.attended,TARGET);
+                    const x   = PAD_L + i * gap;
+                    const barH= Math.max(3, (p/100)*H);
+                    const y   = PAD_T + H - barH;
+                    const label= s.name.length>7 ? s.name.slice(0,6)+'…' : s.name;
+                    const tip  = `${s.name}: ${p.toFixed(1)}% (${s.attended}/${s.conducted})${p>=TARGET?' — Bunk '+bunk:' — Need '+nd}`;
+                    return (
+                      <g key={i}>
+                        {/* Bar background */}
+                        <rect x={x} y={PAD_T} width={barW} height={H}
+                          fill="rgba(255,255,255,.03)" rx="3"/>
+                        {/* Animated bar */}
+                        <rect x={x} y={y} width={barW} height={barH}
+                          fill={`url(#bar-grad-${i})`} rx="3" rx2="0">
+                          <title>{tip}</title>
+                        </rect>
+                        {/* Gradient def */}
+                        <defs>
+                          <linearGradient id={`bar-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={col}/>
+                            <stop offset="100%" stopColor={col+'88'}/>
+                          </linearGradient>
+                        </defs>
+                        {/* Percentage label on bar */}
+                        <text x={x + barW/2} y={y - 4} textAnchor="middle"
+                          fill={col} fontSize="9" fontWeight="700">{p.toFixed(0)}%</text>
+                        {/* Subject name below */}
+                        <text x={x + barW/2} y={svgH - PAD_B + 12} textAnchor="middle"
+                          fill="rgba(255,255,255,.45)" fontSize="9">{label}</text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
             </div>
-            <div style={{textAlign:'center',marginTop:'8px',fontSize:'11px',color:'var(--text3)'}}>Target: {TARGET}%</div>
-          </div>
-        )}
+          );
+        })()}
       </>}
 {/* 🔥 IMPORT FROM CYBERVIDYA — SEMI AUTO */}
 <ImportSection col={col} onImported={()=>{}}/>
@@ -787,9 +861,27 @@ function Subjects({user}) {
             {syncing ? 'Syncing...' : '☁️ Synced across all devices'}
           </div>
         </div>
-        <button className="btn btn-primary" onClick={()=>setShowAdd(p=>!p)}>
-          {showAdd ? '✕ Close' : '+ Add Subject'}
-        </button>
+        <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap',justifyContent:'flex-end'}}>
+          {/* Threshold Picker */}
+          <div style={{display:'flex',alignItems:'center',gap:'5px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'4px 8px'}}>
+            <span style={{fontSize:'11px',color:'var(--text3)',fontWeight:600,whiteSpace:'nowrap'}}>🎯 Target</span>
+            <button onClick={()=>setTarget(TARGET-1)} style={{background:'none',border:'none',color:'var(--text2)',cursor:'pointer',fontSize:'14px',lineHeight:1,padding:'0 2px',fontWeight:700}}>−</button>
+            <span style={{fontFamily:'Syne,sans-serif',fontSize:'13px',fontWeight:800,color:'var(--accent2)',minWidth:'28px',textAlign:'center'}}>{TARGET}%</span>
+            <button onClick={()=>setTarget(TARGET+1)} style={{background:'none',border:'none',color:'var(--text2)',cursor:'pointer',fontSize:'14px',lineHeight:1,padding:'0 2px',fontWeight:700}}>+</button>
+          </div>
+          {/* Quick presets */}
+          <div style={{display:'flex',gap:'3px'}}>
+            {[65,70,75,80].map(v=>(
+              <button key={v} onClick={()=>setTarget(v)}
+                style={{padding:'4px 7px',borderRadius:'5px',border:`1px solid ${TARGET===v?'var(--accent)':'var(--border)'}`,background:TARGET===v?'var(--accent)':'var(--surface)',color:TARGET===v?'#fff':'var(--text3)',fontSize:'11px',fontWeight:700,cursor:'pointer',transition:'all .15s'}}>
+                {v}%
+              </button>
+            ))}
+          </div>
+          <button className="btn btn-primary" onClick={()=>setShowAdd(p=>!p)}>
+            {showAdd ? '✕ Close' : '+ Add Subject'}
+          </button>
+        </div>
       </div>
 
       {/* ADD FORM */}
