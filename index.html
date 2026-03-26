@@ -117,27 +117,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .empty-icon{font-size:56px;margin-bottom:16px;opacity:.5}
 .empty-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px}
 .empty-sub{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6}
-.trend-wrap{padding:20px 24px 18px;margin-bottom:24px}
-.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
-.chart-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.chart-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);font-weight:500}
-.chart-legend-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
-.chart-area{position:relative;width:100%}
-.chart-grid{position:absolute;inset:0;pointer-events:none}
-.chart-grid-line{position:absolute;left:0;right:0;height:1px;background:var(--border)}
-.chart-grid-label{position:absolute;left:0;font-size:9px;color:var(--text3);font-weight:600;transform:translateY(-50%);line-height:1}
-.chart-target-line{position:absolute;left:0;right:0;height:2px;z-index:2;pointer-events:none}
-.chart-target-label{position:absolute;right:0;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;line-height:1;white-space:nowrap;transform:translateY(-50%)}
-.chart-bars-wrap{display:flex;align-items:flex-end;gap:6px;position:relative;z-index:1}
-.chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;cursor:default}
-.chart-bar-col:hover .chart-bar-inner{filter:brightness(1.18)}
-.chart-bar-pct{font-size:10px;font-weight:800;line-height:1;transition:color .3s}
-.chart-bar-track{width:100%;border-radius:6px 6px 0 0;overflow:visible;position:relative}
-.chart-bar-inner{width:100%;border-radius:6px 6px 0 0;transition:height .7s cubic-bezier(0.34,1.56,0.64,1),background .4s;min-height:3px;position:relative}
-.chart-bar-inner::after{content:'';position:absolute;top:0;left:0;right:0;height:40%;background:rgba(255,255,255,.12);border-radius:6px 6px 0 0;pointer-events:none}
-.chart-bar-name{font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;padding:0 2px}
-.chart-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.4)}
-.chart-bar-col:hover .chart-tooltip{opacity:1}
+.trend-wrap{padding:24px;margin-bottom:24px}
+.trend-bars{display:flex;align-items:flex-end;gap:8px;height:100px;margin-top:16px}
+.trend-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.trend-bar{width:100%;border-radius:5px 5px 0 0;transition:height .8s cubic-bezier(0.34,1.56,0.64,1);min-height:4px}
+.trend-bar:hover{filter:brightness(1.2)}
+.trend-bar-pct{font-size:10px;color:var(--text2);font-weight:600}
+.trend-bar-name{font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px;text-align:center}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;animation:bounceIn .3s ease}
 .modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px}
@@ -217,18 +203,21 @@ input[type=number]{-moz-appearance:textfield}
 .ext-active-pill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid rgba(52,211,153,.22);padding:4px 10px;border-radius:100px;animation:fadeIn .4s ease;}
 .ext-pulse-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:dotPulse 2s ease infinite;}
 
-/* ── Threshold Selector ── */
-.threshold-control{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;transition:border-color .2s;}
-.threshold-control:hover{border-color:var(--border2);}
-.threshold-label{font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;}
-.threshold-btns{display:flex;align-items:center;gap:4px;}
-.threshold-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;}
-.threshold-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
-.threshold-val{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--accent2);min-width:36px;text-align:center;}
-.threshold-presets{display:flex;gap:4px;}
-.threshold-preset{padding:3px 9px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
-.threshold-preset:hover{border-color:var(--accent2);color:var(--accent2);}
-.threshold-preset.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent2);}
+/* ── Popup Scraper (No Extension Needed) ── */
+.popscrape-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(14px);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
+.popscrape-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;animation:bounceIn .3s ease;text-align:center}
+.popscrape-spinner{font-size:42px;animation:spin 1.2s linear infinite;display:block;margin-bottom:14px}
+.popscrape-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:6px}
+.popscrape-sub{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:18px}
+.popscrape-steps{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;text-align:left}
+.popscrape-step{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;background:var(--surface);border:1px solid var(--border)}
+.popscrape-step.done{background:var(--green-bg);border-color:rgba(52,211,153,.25);color:var(--green)}
+.popscrape-step.active{background:rgba(124,106,247,.08);border-color:rgba(124,106,247,.3);color:var(--accent2)}
+.popscrape-step.wait{color:var(--text3)}
+.popscrape-step-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center}
+.popscrape-progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:18px}
+.popscrape-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .6s ease}
+.popscrape-warn{padding:10px 14px;border-radius:var(--radius-sm);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);font-size:12px;color:var(--yellow);line-height:1.6;margin-bottom:14px;text-align:left}
 </style>
 </head>
 <body>
@@ -620,17 +609,7 @@ function SubjectCard({subject, onEdit, onDelete, target}) {
 function Subjects({user}) {
   const [subjects,setSubjects] = useState([]);
   const [syncing,setSyncing]   = useState(true);
-  // ── Threshold: read from localStorage, default 75 ──
-  const [TARGET, setTargetRaw] = useState(() => {
-    const saved = localStorage.getItem('bpp_threshold');
-    const n = parseInt(saved);
-    return (n >= 1 && n <= 100) ? n : 75;
-  });
-  function setTarget(val) {
-    const n = Math.min(100, Math.max(1, Math.round(val)));
-    setTargetRaw(n);
-    localStorage.setItem('bpp_threshold', String(n));
-  }
+  const TARGET = 75;
   const [showAdd,setShowAdd]   = useState(false);
   const [editModal,setEdit]    = useState(null);
   const [form,setForm]         = useState({name:'',conducted:'',attended:''});
@@ -778,95 +757,24 @@ function Subjects({user}) {
         </div>
 
         {/* CHART */}
-        {subjects.length>=2 && (()=>{
-          const CHART_H = 160; // px — fixed height for the bar area
-          const maxPct  = Math.max(100, ...subjects.map(s=>calcAtt(s.conducted,s.attended)));
-          const gridLines = [0,25,50,75,100].filter(v=>v<=maxPct);
-          const targetPct = TARGET;
-          const targetBottom = (targetPct / maxPct) * CHART_H; // px from bottom
-          return (
+        {subjects.length>=2 && (
           <div className="glass trend-wrap" style={{animation:'fadeUp .4s ease'}}>
-            {/* Header row */}
-            <div className="chart-header">
-              <div className="section-title" style={{margin:0}}>📈 Subject-wise Chart</div>
-              <div className="chart-legend">
-                <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'var(--green)'}}/> Safe ≥{TARGET}%</div>
-                <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'var(--yellow)'}}/> Risk</div>
-                <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'var(--red)'}}/> Danger</div>
-                <div className="chart-legend-item">
-                  <div style={{width:18,height:2,background:'rgba(255,255,255,.5)',borderRadius:1}}/>
-                  <span style={{color:'var(--text2)'}}>Target</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Chart area */}
-            <div className="chart-area">
-              {/* Grid lines + Y-axis labels */}
-              <div className="chart-grid" style={{height:CHART_H}}>
-                {gridLines.map(v=>(
-                  <div key={v} style={{position:'absolute',bottom:`${(v/maxPct)*CHART_H}px`,left:0,right:0}}>
-                    <div className="chart-grid-line"/>
-                    <div className="chart-grid-label" style={{bottom:2}}>{v}%</div>
+            <div className="section-title" style={{marginBottom:'8px'}}>📈 Subject-wise Chart</div>
+            <div className="trend-bars">
+              {subjects.map((s,i)=>{
+                const p=calcAtt(s.conducted,s.attended), st=getStatus(p,TARGET), col=sColor(st);
+                return (
+                  <div key={i} className="trend-bar-col">
+                    <div className="trend-bar-pct" style={{color:col}}>{p.toFixed(0)}%</div>
+                    <div className="trend-bar" style={{height:`${(p/100)*80}%`,background:`linear-gradient(to top,${col}77,${col})`}} title={`${s.name}: ${p.toFixed(1)}%`}/>
+                    <div className="trend-bar-name">{s.name}</div>
                   </div>
-                ))}
-              </div>
-
-              {/* Target line */}
-              <div className="chart-target-line"
-                style={{bottom:`${targetBottom}px`,background:`rgba(255,255,255,0.35)`}}>
-                <div className="chart-target-label"
-                  style={{background:'rgba(124,106,247,.25)',color:'var(--accent2)',border:'1px solid rgba(124,106,247,.35)',bottom:0}}>
-                  {TARGET}%
-                </div>
-              </div>
-
-              {/* Bars */}
-              <div className="chart-bars-wrap" style={{height:CHART_H,paddingLeft:'28px'}}>
-                {subjects.map((s,i)=>{
-                  const p   = calcAtt(s.conducted,s.attended);
-                  const st  = getStatus(p, TARGET);
-                  const col = sColor(st);
-                  const barH = Math.max(3, (p / maxPct) * CHART_H);
-                  const bunk = p >= TARGET ? canBunk(s.conducted,s.attended,TARGET) : 0;
-                  const need = p <  TARGET ? needAtt(s.conducted,s.attended,TARGET) : 0;
-                  return (
-                    <div key={s.id||i} className="chart-bar-col" style={{height:CHART_H,justifyContent:'flex-end'}}>
-                      {/* Tooltip */}
-                      <div className="chart-tooltip">
-                        <div style={{fontWeight:800,marginBottom:3}}>{s.name}</div>
-                        <div style={{color:col,fontSize:13}}>{p.toFixed(1)}%</div>
-                        <div style={{color:'var(--text2)',fontSize:10,marginTop:2}}>
-                          {s.attended}/{s.conducted} classes
-                        </div>
-                        {p>=TARGET
-                          ? <div style={{color:'var(--green)',fontSize:10}}>🎉 Can skip {bunk}</div>
-                          : <div style={{color:'var(--red)',fontSize:10}}>📚 Need {need} more</div>}
-                      </div>
-                      {/* Percent label */}
-                      <div className="chart-bar-pct" style={{color:col}}>{p.toFixed(0)}%</div>
-                      {/* Bar */}
-                      <div className="chart-bar-inner"
-                        style={{
-                          height:`${barH}px`,
-                          background:`linear-gradient(to top, ${col}99, ${col})`,
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+                );
+              })}
             </div>
-
-            {/* Subject name labels — below the chart */}
-            <div style={{display:'flex',gap:'6px',paddingLeft:'28px',marginTop:'8px'}}>
-              {subjects.map((s,i)=>(
-                <div key={i} className="chart-bar-name" style={{flex:1}}>{s.name}</div>
-              ))}
-            </div>
+            <div style={{textAlign:'center',marginTop:'8px',fontSize:'11px',color:'var(--text3)'}}>Target: {TARGET}%</div>
           </div>
-          );
-        })()}
+        )}
       </>}
 {/* 🔥 IMPORT FROM CYBERVIDYA — SEMI AUTO */}
 <ImportSection col={col} onImported={()=>{}}/>
@@ -877,20 +785,6 @@ function Subjects({user}) {
           <div className="sync-label">
             <span className={`sync-dot ${syncing?'syncing':''}`}/>
             {syncing ? 'Syncing...' : '☁️ Synced across all devices'}
-          </div>
-        </div>
-        {/* ── Threshold Control ── */}
-        <div className="threshold-control">
-          <span className="threshold-label">Target</span>
-          <div className="threshold-btns">
-            <button className="threshold-btn" onClick={()=>setTarget(TARGET-1)}>−</button>
-            <span className="threshold-val">{TARGET}%</span>
-            <button className="threshold-btn" onClick={()=>setTarget(TARGET+1)}>+</button>
-          </div>
-          <div className="threshold-presets">
-            {[65,70,75,80].map(v=>(
-              <button key={v} className={`threshold-preset ${TARGET===v?'active':''}`} onClick={()=>setTarget(v)}>{v}%</button>
-            ))}
           </div>
         </div>
         <button className="btn btn-primary" onClick={()=>setShowAdd(p=>!p)}>
@@ -1666,166 +1560,371 @@ function SyncBanner({ subjects, user, onDone, onCancel }) {
 
 
 // ══════════════════════════════════════════════════════════════
-//  AutoFetchBanner — One-click CyberVidya fetch card v11
+//  CyberVidyaScraper — Popup-based scraper, NO extension needed
+//  Works on mobile + desktop, no CORS issues via popup window
 // ══════════════════════════════════════════════════════════════
+
+// ── The scraper script injected into the popup via URL hash ──
+// When CyberVidya loads in popup, it reads location.hash, finds
+// this code, and postMessages parsed data back to parent window.
+const SCRAPER_SCRIPT = `
+(function() {
+  'use strict';
+  const PARENT = window.opener;
+  if (!PARENT) return;
+
+  function post(type, payload) {
+    try { PARENT.postMessage({ _bpp: true, type, payload }, '*'); } catch(e) {}
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function parseTable() {
+    const results = [];
+    const seen    = new Set();
+    const tables  = document.querySelectorAll('table');
+
+    for (const table of tables) {
+      const rows = Array.from(table.querySelectorAll('tr'));
+      if (rows.length < 3) continue;
+
+      // Find header row
+      let hdr = null, hdrIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 5); i++) {
+        const cells = Array.from(rows[i].querySelectorAll('th,td'))
+                          .map(c => c.innerText.trim().toLowerCase());
+        if (cells.some(c => c === 'course') &&
+            (cells.some(c => c === 'presents' || c === 'present') || cells.some(c => c === 'lectures'))) {
+          hdr = cells; hdrIdx = i; break;
+        }
+      }
+      if (!hdr || hdrIdx < 0) continue;
+
+      let cCourse=-1, cComp=-1, cPresents=-1, cSpecial=-1, cLectures=-1;
+      hdr.forEach((h,i) => {
+        if (h === 'course')                                     cCourse   = i;
+        else if (h === 'course component' || h === 'component') cComp     = i;
+        else if (h === 'presents' || h === 'present')           cPresents = i;
+        else if (h.includes('special'))                         cSpecial  = i;
+        else if (h === 'lectures')                              cLectures = i;
+      });
+      if (cCourse < 0 || cLectures < 0) continue;
+
+      for (let i = hdrIdx + 1; i < rows.length; i++) {
+        const tds   = Array.from(rows[i].querySelectorAll('td'));
+        if (tds.length <= Math.max(cCourse, cLectures)) continue;
+        const texts = tds.map(t => t.innerText.trim());
+        if (!/^\d+$/.test(texts[0])) continue;
+
+        const rawName = texts[cCourse] || '';
+        if (!rawName || rawName.length < 3) continue;
+        if (/^(BLENDED|THEORY|PRACTICAL|LAB|TUTORIAL)$/i.test(rawName)) continue;
+        if (/^\d+$/.test(rawName)) continue;
+
+        const name = rawName.replace(/\.{2,}$/, '').trim().slice(0, 60);
+        if (name.length < 2) continue;
+
+        const comp   = (cComp >= 0 && cComp < texts.length) ? texts[cComp].toUpperCase() : '';
+        const suffix = (comp === 'PRACTICAL' || comp === 'LAB') ? ' (Lab)' : '';
+        const full   = name + suffix;
+        const key    = full.toLowerCase();
+        if (seen.has(key)) continue;
+
+        const P = cPresents >= 0 ? (parseInt(texts[cPresents]) || 0) : 0;
+        const S = cSpecial  >= 0 ? (parseInt(texts[cSpecial])  || 0) : 0;
+        const L = parseInt(texts[cLectures]) || 0;
+        if (L <= 0) continue;
+
+        seen.add(key);
+        results.push({ name: full, attended: Math.min(P + S, L), conducted: L });
+      }
+      if (results.length > 0) break;
+    }
+    return results;
+  }
+
+  async function run() {
+    post('status', { step: 'checking' });
+
+    // Wait for table to appear (up to 15s)
+    let found = false;
+    for (let i = 0; i < 30; i++) {
+      const tables = document.querySelectorAll('table');
+      for (const t of tables) {
+        if (t.querySelectorAll('tbody tr').length > 0 && (t.innerText||'').includes('%')) {
+          found = true; break;
+        }
+      }
+      if (found) break;
+      await sleep(500);
+    }
+
+    if (!found) {
+      // Might not be on attendance page yet — navigate
+      const onAtt = window.location.href.includes('my-attendance');
+      if (!onAtt) {
+        post('status', { step: 'navigating' });
+        window.location.href = 'https://kiet.cybervidya.net/attendance/my-attendance';
+        return; // page will reload, script re-runs
+      }
+      post('error', { msg: 'Attendance table not found. Please make sure you are logged in.' });
+      return;
+    }
+
+    post('status', { step: 'scraping' });
+    await sleep(400);
+
+    const subjects = parseTable();
+    if (subjects.length === 0) {
+      post('error', { msg: 'Could not read attendance data. Please login to CyberVidya and try again.' });
+      return;
+    }
+
+    post('done', { subjects });
+  }
+
+  // Re-run every time the page URL changes (SPA navigation)
+  let lastUrl = location.href;
+  const observer = new MutationObserver(() => {
+    if (location.href !== lastUrl) { lastUrl = location.href; setTimeout(run, 1200); }
+  });
+  observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+
+  // Initial run
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(run, 800));
+  } else {
+    setTimeout(run, 800);
+  }
+})();
+`;
+
+// ── AutoFetchBanner component ─────────────────────────────────
 function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
-  // Own independent detection — checks BOTH marker IDs
-  const [extInstalled, setExtInstalled] = useState(() =>
-    !!(document.getElementById('bunkplanner-extension-installed') ||
-       document.getElementById('bpp-ext-marker'))
-  );
-  // phase: 'idle' | 'opening' | 'scraping' | 'done' | 'error'
-  const [phase, setPhase] = useState('idle');
-  const [statusMsg, setStatusMsg] = useState('');
-  const phaseRef = React.useRef('idle');
+  // phase: 'idle' | 'popup_open' | 'waiting' | 'scraping' | 'done' | 'error'
+  const [phase,     setPhaseState] = useState('idle');
+  const [statusMsg, setStatusMsg]  = useState('');
+  const [progress,  setProgress]   = useState(0);
+  const phaseRef  = React.useRef('idle');
+  const popupRef  = React.useRef(null);
+  const timerRef  = React.useRef(null);
 
-  function updatePhase(p) { phaseRef.current = p; setPhase(p); }
+  function setPhase(p) { phaseRef.current = p; setPhaseState(p); }
 
-  // ── Poll for extension marker (document_start means it's injected early) ──
-  useEffect(() => {
-    function check() {
-      return !!(
-        document.getElementById('bunkplanner-extension-installed') ||
-        document.getElementById('bpp-ext-marker')
-      );
+  // ── Inject scraper into popup via <script> tag ────────────
+  function injectScraperIntoPopup(popup) {
+    try {
+      const doc = popup.document;
+      if (!doc) return false;
+      // Only inject once
+      if (doc.getElementById('_bpp_scraper')) return true;
+      const s = doc.createElement('script');
+      s.id = '_bpp_scraper';
+      s.textContent = SCRAPER_SCRIPT;
+      (doc.head || doc.body || doc.documentElement).appendChild(s);
+      return true;
+    } catch(e) {
+      // Cross-origin — can't inject yet (page hasn't loaded or is on CyberVidya login)
+      return false;
     }
-    if (extProp || check()) { setExtInstalled(true); return; }
-    let n = 0;
-    const iv = setInterval(() => {
-      n++;
-      if (check()) { setExtInstalled(true); clearInterval(iv); return; }
-      if (n >= 100) clearInterval(iv); // 40s max
-    }, 400);
-    return () => clearInterval(iv);
-  }, [extProp]);
+  }
 
-  useEffect(() => { if (extProp) setExtInstalled(true); }, [extProp]);
+  // ── Main: open popup window ───────────────────────────────
+  function handleFetch() {
+    if (phaseRef.current !== 'idle') return;
+    setPhase('popup_open');
+    setStatusMsg('Opening CyberVidya in a popup...');
+    setProgress(10);
 
-  // ── Listen for status updates from background via bridge ──
-  useEffect(() => {
-    function onStatus(e) {
-      const { status, message, count } = e.detail || {};
-      console.log('[AutoFetchBanner] status:', status, message);
-      if (status === 'opening')  { updatePhase('opening');  setStatusMsg('Opening CyberVidya...'); }
-      if (status === 'scraping') { updatePhase('scraping'); setStatusMsg('Scraping attendance data...'); }
-      if (status === 'done')     { updatePhase('done');     setStatusMsg(`${count || ''} subjects ready!`); }
-      if (status === 'error')    { updatePhase('error');    setStatusMsg(message || 'An error occurred. Please retry.'); }
+    const W = Math.min(960, window.screen.width  - 40);
+    const H = Math.min(700, window.screen.height - 60);
+    const L = Math.round((window.screen.width  - W) / 2);
+    const T = Math.round((window.screen.height - H) / 2);
+
+    const popup = window.open(
+      'https://kiet.cybervidya.net/attendance/my-attendance',
+      'bpp_scraper_popup',
+      `width=${W},height=${H},left=${L},top=${T},resizable=yes,scrollbars=yes`
+    );
+
+    if (!popup) {
+      setPhase('error');
+      setStatusMsg('Popup was blocked! Please allow popups for this site and try again.');
+      return;
     }
-    window.addEventListener('bpp-autofetch-status', onStatus);
-    return () => window.removeEventListener('bpp-autofetch-status', onStatus);
-  }, []);
 
-  // ── Listen for final data (CustomEvent from bridge/injection) ──
+    popupRef.current = popup;
+
+    // ── Poll: inject scraper as soon as popup document is accessible ──
+    let injectAttempts = 0;
+    const injectInterval = setInterval(() => {
+      injectAttempts++;
+      if (popup.closed) { clearInterval(injectInterval); return; }
+      const injected = injectScraperIntoPopup(popup);
+      if (injected) {
+        clearInterval(injectInterval);
+        console.log('[BPP] Scraper injected into popup');
+      }
+      if (injectAttempts > 40) clearInterval(injectInterval); // 20s max
+    }, 500);
+
+    // ── Timeout: if popup closed or no data in 3min ───────────
+    timerRef.current = setTimeout(() => {
+      if (phaseRef.current !== 'idle' && phaseRef.current !== 'done') {
+        setPhase('error');
+        setStatusMsg('Timeout. Please login to CyberVidya and try again.');
+        if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+      }
+    }, 180000);
+  }
+
+  // ── Listen for postMessage from popup ─────────────────────
   useEffect(() => {
-    function onSync(e) {
-      if (!['opening','scraping','waiting','done'].includes(phaseRef.current)) return;
-      const subs = ((e.detail || {}).subjects || []).filter(s => s.name && s.conducted > 0);
-      if (subs.length > 0) {
-        updatePhase('idle');
-        setStatusMsg('');
-        onDataReceived(subs);
+    function onMessage(e) {
+      const data = e.data;
+      if (!data || !data._bpp) return;
+
+      console.log('[BPP] postMessage:', data.type, data.payload);
+
+      if (data.type === 'status') {
+        const step = data.payload?.step;
+        if (step === 'navigating') { setStatusMsg('Navigating to attendance page...'); setProgress(25); }
+        if (step === 'checking')   { setStatusMsg('Waiting for attendance table...'); setPhase('waiting'); setProgress(45); }
+        if (step === 'scraping')   { setStatusMsg('Reading your attendance data...'); setPhase('scraping'); setProgress(75); }
+      }
+
+      if (data.type === 'done') {
+        clearTimeout(timerRef.current);
+        const subs = (data.payload?.subjects || []).filter(s => s.name && s.conducted > 0);
+        if (subs.length > 0) {
+          setProgress(100);
+          setPhase('done');
+          setStatusMsg(`${subs.length} subjects fetched!`);
+          // Close popup after short delay
+          setTimeout(() => {
+            if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+          }, 800);
+          // Show import banner
+          setTimeout(() => {
+            setPhase('idle');
+            setStatusMsg('');
+            setProgress(0);
+            onDataReceived(subs);
+          }, 1200);
+        } else {
+          setPhase('error');
+          setStatusMsg('No subjects found. Please make sure you are logged in.');
+        }
+      }
+
+      if (data.type === 'error') {
+        clearTimeout(timerRef.current);
+        setPhase('error');
+        setStatusMsg(data.payload?.msg || 'Something went wrong. Please try again.');
+        setProgress(0);
       }
     }
-    window.addEventListener('bunkplanner-sync', onSync);
-    return () => window.removeEventListener('bunkplanner-sync', onSync);
+
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
   }, [onDataReceived]);
 
-  // ── Polling fallback for localStorage ──
+  // ── Detect popup closed manually ─────────────────────────
   useEffect(() => {
-    if (!['opening','scraping','waiting'].includes(phase)) return;
-    let n = 0;
+    if (!['popup_open','waiting','scraping'].includes(phase)) return;
     const iv = setInterval(() => {
-      n++;
-      const raw = localStorage.getItem('bp_pending_sync');
-      if (raw) {
+      if (popupRef.current && popupRef.current.closed) {
         clearInterval(iv);
-        localStorage.removeItem('bp_pending_sync');
-        try {
-          const parsed = JSON.parse(raw);
-          const subs = (parsed.subjects || []).filter(s => s.name && s.conducted > 0);
-          if (subs.length > 0) { updatePhase('idle'); setStatusMsg(''); onDataReceived(subs); return; }
-        } catch(e) {}
+        if (phaseRef.current !== 'done' && phaseRef.current !== 'idle') {
+          setPhase('idle');
+          setStatusMsg('');
+          setProgress(0);
+        }
       }
-      if (n >= 90) { updatePhase('error'); setStatusMsg('Timeout. Please login to CyberVidya and retry.'); clearInterval(iv); }
-    }, 600);
+    }, 800);
     return () => clearInterval(iv);
   }, [phase]);
 
-  function handleFetch() {
-    if (!extInstalled) return;
-    updatePhase('opening');
-    setStatusMsg('Opening CyberVidya...');
-    // Signal bridge.js → background.js → open CyberVidya tab & scrape
-    window.dispatchEvent(new CustomEvent('bpp-open-cybervidya', { detail: { returnUrl: window.location.href } }));
-  }
+  // ── Cleanup on unmount ────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      clearTimeout(timerRef.current);
+      if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+    };
+  }, []);
 
-  const isLoading = ['opening','scraping','waiting'].includes(phase);
+  const isLoading = ['popup_open','waiting','scraping'].includes(phase);
 
-  const stepLabels = [
-    { n:'1', l:'Click',     active: phase !== 'idle' },
-    { n:'2', l:'CyberVidya',     active: phase === 'opening' || phase === 'scraping' },
-    { n:'3', l:'Auto scrape',    active: phase === 'scraping' },
-    { n:'4', l:'Import',    active: phase === 'done' },
+  const steps = [
+    { icon: phase!=='idle'?'✅':'1️⃣', label:'Click Fetch',         done: phase!=='idle',    active: phase==='popup_open' },
+    { icon: ['waiting','scraping','done'].includes(phase)?'✅':'2️⃣', label:'Login & Wait',  done: ['scraping','done'].includes(phase), active: phase==='waiting' },
+    { icon: ['done'].includes(phase)?'✅':'3️⃣',                      label:'Auto Scrape',   done: phase==='done',    active: phase==='scraping' },
+    { icon: '4️⃣',                                                     label:'Import Data',   done: false,             active: phase==='done' },
   ];
 
   return (
     <div className="cv-fetch-banner">
       <div className="cv-banner-inner">
-        <div className="cv-banner-icon" style={{fontSize: isLoading ? '28px' : '32px'}}>
-          {isLoading ? '⏳' : phase === 'done' ? '✅' : phase === 'error' ? '❌' : '🎓'}
+        <div className="cv-banner-icon" style={{fontSize: isLoading ? '26px' : '30px'}}>
+          {phase==='error' ? '❌' : phase==='done' ? '✅' : isLoading ? '⏳' : '🎓'}
         </div>
         <div className="cv-banner-text">
           <div className="cv-banner-title">
-            {phase === 'error' ? 'Something went wrong 😅' :
-             phase === 'done'  ? 'Data is ready! 🎉' :
+            {phase==='error' ? 'Something went wrong' :
+             phase==='done'  ? 'Data fetched! 🎉' :
              'Fetch Attendance from CyberVidya'}
           </div>
           <div className="cv-banner-sub">
-            {statusMsg || 'Auto-import all your subjects\' attendance in one click!'}
+            {statusMsg || 'Works on mobile & desktop — no extension needed!'}
           </div>
-          <div className="cv-banner-steps">
-            {stepLabels.map(({n, l, active}, i, a) => (
-              <React.Fragment key={n}>
-                <div className="cv-step" style={{opacity: active ? 1 : 0.45, fontWeight: active ? 700 : 400}}>
-                  <span>{n}</span> {l}
-                </div>
-                {i < a.length-1 && <span className="cv-step-arrow">→</span>}
-              </React.Fragment>
-            ))}
-          </div>
+          {!isLoading && phase === 'idle' && (
+            <div className="cv-banner-steps">
+              {[
+                {n:'1',l:'Click Fetch'},{n:'2',l:'Login on CyberVidya'},
+                {n:'3',l:'Auto Scrape'},{n:'4',l:'Import'}
+              ].map(({n,l},i,a)=>(
+                <React.Fragment key={n}>
+                  <div className="cv-step"><span>{n}</span> {l}</div>
+                  {i < a.length-1 && <span className="cv-step-arrow">→</span>}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* CTA / Loading / Error button */}
         {phase === 'idle' && (
-          <button
-            className="cv-fetch-btn"
-            onClick={handleFetch}
-            disabled={!extInstalled}
-            title={!extInstalled ? 'Install the extension first' : 'Fetch attendance from CyberVidya'}
-          >
+          <button className="cv-fetch-btn" onClick={handleFetch}>
             <span className="cv-fetch-btn-shine"/>
-            <span style={{fontSize:'16px'}}>{extInstalled ? '⚡' : '🔌'}</span>
-            {extInstalled ? 'Fetch Attendance' : 'Extension Needed'}
+            <span style={{fontSize:'16px'}}>⚡</span>
+            Fetch Attendance
           </button>
         )}
-
         {isLoading && (
           <div className="cv-fetching-state">
             <span className="cv-dot"/><span className="cv-dot"/><span className="cv-dot"/>
           </div>
         )}
-
         {phase === 'error' && (
           <button className="btn btn-ghost" style={{padding:'8px 16px',fontSize:'13px',flexShrink:0}}
-            onClick={() => { updatePhase('idle'); setStatusMsg(''); }}>
+            onClick={() => { setPhase('idle'); setStatusMsg(''); setProgress(0); }}>
             🔄 Retry
           </button>
         )}
       </div>
 
-      {phase === 'idle' && !extInstalled && (
-        <div className="cv-no-ext">
-          ⚠️ <strong>Extension not installed.</strong>{' '}
-          Install <strong>extension_v11.zip</strong> from brave://extensions/ first — then reload the page.
+      {/* Progress bar */}
+      {isLoading && (
+        <div className="popscrape-progress" style={{marginTop:'14px',marginBottom:0}}>
+          <div className="popscrape-progress-fill" style={{width:`${progress}%`}}/>
+        </div>
+      )}
+
+      {/* Popup blocked warning */}
+      {phase === 'idle' && (
+        <div style={{marginTop:'10px',fontSize:'11px',color:'var(--text3)',lineHeight:1.5}}>
+          💡 A popup window will open — please allow popups for this site if prompted.
+          Works on mobile &amp; desktop without any extension.
         </div>
       )}
     </div>
