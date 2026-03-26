@@ -1662,14 +1662,15 @@ function SyncBanner({ subjects, user, onDone, onCancel }) {
 const SCRAPER_SCRIPT = `
 (function() {
   'use strict';
+  if (window.__bpp_injected) return;
+  window.__bpp_injected = true;
+
   const PARENT = window.opener;
   if (!PARENT) return;
 
   function post(type, payload) {
     try { PARENT.postMessage({ _bpp: true, type, payload }, '*'); } catch(e) {}
   }
-
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   function parseTable() {
     const results = [];
@@ -1680,7 +1681,6 @@ const SCRAPER_SCRIPT = `
       const rows = Array.from(table.querySelectorAll('tr'));
       if (rows.length < 3) continue;
 
-      // Find header row
       let hdr = null, hdrIdx = -1;
       for (let i = 0; i < Math.min(rows.length, 5); i++) {
         const cells = Array.from(rows[i].querySelectorAll('th,td'))
@@ -1735,58 +1735,79 @@ const SCRAPER_SCRIPT = `
     return results;
   }
 
-  async function run() {
-    post('status', { step: 'checking' });
-
-    // Wait for table to appear (up to 15s)
-    let found = false;
-    for (let i = 0; i < 30; i++) {
-      const tables = document.querySelectorAll('table');
-      for (const t of tables) {
-        if (t.querySelectorAll('tbody tr').length > 0 && (t.innerText||'').includes('%')) {
-          found = true; break;
-        }
-      }
-      if (found) break;
-      await sleep(500);
+  function tableReady() {
+    const tables = document.querySelectorAll('table');
+    for (const t of tables) {
+      if (t.querySelectorAll('tbody tr').length > 0 && (t.innerText||'').includes('%')) return true;
     }
-
-    if (!found) {
-      // Might not be on attendance page yet — navigate
-      const onAtt = window.location.href.includes('my-attendance');
-      if (!onAtt) {
-        post('status', { step: 'navigating' });
-        window.location.href = 'https://kiet.cybervidya.net/attendance/my-attendance';
-        return; // page will reload, script re-runs
-      }
-      post('error', { msg: 'Attendance table not found. Please make sure you are logged in.' });
-      return;
-    }
-
-    post('status', { step: 'scraping' });
-    await sleep(400);
-
-    const subjects = parseTable();
-    if (subjects.length === 0) {
-      post('error', { msg: 'Could not read attendance data. Please login to CyberVidya and try again.' });
-      return;
-    }
-
-    post('done', { subjects });
+    return false;
   }
 
-  // Re-run every time the page URL changes (SPA navigation)
-  let lastUrl = location.href;
-  const observer = new MutationObserver(() => {
-    if (location.href !== lastUrl) { lastUrl = location.href; setTimeout(run, 1200); }
-  });
-  observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+  function tryParse() {
+    const subjects = parseTable();
+    if (subjects.length > 0) {
+      post('done', { subjects });
+      return true;
+    }
+    return false;
+  }
 
-  // Initial run
+  function run() {
+    // If not on attendance page, navigate there immediately
+    if (!window.location.href.includes('my-attendance')) {
+      post('status', { step: 'navigating' });
+      window.location.href = 'https://kiet.cybervidya.net/attendance/my-attendance';
+      return;
+    }
+
+    post('status', { step: 'checking' });
+
+    // Try immediately — table may already be loaded
+    if (tableReady()) {
+      post('status', { step: 'scraping' });
+      if (tryParse()) return;
+    }
+
+    // Use MutationObserver — fires as soon as table rows appear (much faster than polling)
+    let done = false;
+    const obs = new MutationObserver(() => {
+      if (done) return;
+      if (tableReady()) {
+        done = true;
+        obs.disconnect();
+        post('status', { step: 'scraping' });
+        if (!tryParse()) {
+          post('error', { msg: 'Could not read attendance. Please login to CyberVidya.' });
+        }
+      }
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+
+    // Fallback timeout — if table never appears in 12s
+    setTimeout(() => {
+      if (!done) {
+        done = true;
+        obs.disconnect();
+        post('error', { msg: 'Attendance table not found. Please login to CyberVidya and try again.' });
+      }
+    }, 12000);
+  }
+
+  // Watch for SPA navigation (URL changes without page reload)
+  let lastUrl = location.href;
+  new MutationObserver(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      window.__bpp_injected = false; // allow re-run
+      setTimeout(run, 300);
+    }
+  }).observe(document.documentElement, { childList: true, subtree: true });
+
+  // Run immediately — no artificial delay
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(run, 800));
+    document.addEventListener('DOMContentLoaded', run);
   } else {
-    setTimeout(run, 800);
+    run();
   }
 })();
 `;
@@ -1847,7 +1868,7 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
 
     popupRef.current = popup;
 
-    // ── Poll: inject scraper as soon as popup document is accessible ──
+    // ── Inject scraper as fast as possible (100ms polling) ──
     let injectAttempts = 0;
     const injectInterval = setInterval(() => {
       injectAttempts++;
@@ -1855,19 +1876,19 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
       const injected = injectScraperIntoPopup(popup);
       if (injected) {
         clearInterval(injectInterval);
-        console.log('[BPP] Scraper injected into popup');
+        console.log('[BPP] Scraper injected into popup ✅');
       }
-      if (injectAttempts > 40) clearInterval(injectInterval); // 20s max
-    }, 500);
+      if (injectAttempts > 80) clearInterval(injectInterval); // 8s max
+    }, 100);
 
-    // ── Timeout: if popup closed or no data in 3min ───────────
+    // ── Timeout: 90 seconds total ─────────────────────────────
     timerRef.current = setTimeout(() => {
       if (phaseRef.current !== 'idle' && phaseRef.current !== 'done') {
         setPhase('error');
         setStatusMsg('Timeout. Please login to CyberVidya and try again.');
         if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
       }
-    }, 180000);
+    }, 90000);
   }
 
   // ── Listen for postMessage from popup ─────────────────────
@@ -1880,9 +1901,9 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
 
       if (data.type === 'status') {
         const step = data.payload?.step;
-        if (step === 'navigating') { setStatusMsg('Navigating to attendance page...'); setProgress(25); }
-        if (step === 'checking')   { setStatusMsg('Waiting for attendance table...'); setPhase('waiting'); setProgress(45); }
-        if (step === 'scraping')   { setStatusMsg('Reading your attendance data...'); setPhase('scraping'); setProgress(75); }
+        if (step === 'navigating') { setStatusMsg('Navigating to attendance page...'); setProgress(30); }
+        if (step === 'checking')   { setStatusMsg('Detecting attendance table...'); setPhase('waiting'); setProgress(55); }
+        if (step === 'scraping')   { setStatusMsg('Reading your attendance data...'); setPhase('scraping'); setProgress(88); }
       }
 
       if (data.type === 'done') {
@@ -1893,16 +1914,17 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
           setPhase('done');
           setStatusMsg(`${subs.length} subjects fetched!`);
           // Close popup after short delay
+          // Close popup immediately
           setTimeout(() => {
             if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
-          }, 800);
-          // Show import banner
+          }, 200);
+          // Show import banner quickly
           setTimeout(() => {
             setPhase('idle');
             setStatusMsg('');
             setProgress(0);
             onDataReceived(subs);
-          }, 1200);
+          }, 500);
         } else {
           setPhase('error');
           setStatusMsg('No subjects found. Please make sure you are logged in.');
