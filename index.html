@@ -1115,14 +1115,11 @@ function Subjects({user}) {
                 {/* Bars */}
                 <div className="bar-chart-bars">
                   {subjects.map((s, i) => {
-                    const p     = calcAtt(s.conducted, s.attended);
-                    const st    = getStatus(p, threshold);
-                    const col   = sColor(st);
-                    // Fix: use explicit px height — chart height is 200px
-                    const CHART_PX = 200;
-                    const barPx = Math.max(Math.round((p / 100) * CHART_PX), 4);
+                    const p = calcAtt(s.conducted, s.attended);
+                    const st = getStatus(p, threshold);
+                    const col = sColor(st);
+                    const barH = `${Math.max(p, 2)}%`;
                     const delay = `${i * 0.06}s`;
-                    const shortName = s.name.replace(' (Lab)', ' Lab').slice(0, 20);
                     return (
                       <div key={s.id} className="bar-col" style={{animationDelay: delay}}>
                         {/* Tooltip */}
@@ -1130,27 +1127,27 @@ function Subjects({user}) {
                           <div style={{fontFamily:'Syne,sans-serif',fontWeight:800,fontSize:'13px',marginBottom:'4px',color:'var(--text)'}}>{s.name}</div>
                           <div style={{color:col,fontWeight:700,fontSize:'16px',fontFamily:'Syne,sans-serif'}}>{p.toFixed(1)}%</div>
                           <div style={{color:'var(--text2)',fontSize:'10px',marginTop:'2px'}}>{s.attended}/{s.conducted} classes</div>
-                          <div style={{color: p >= threshold ? 'var(--green)' : 'var(--red)',fontSize:'10px',marginTop:'4px',fontWeight:600}}>
+                          <div style={{color:'var(--text3)',fontSize:'10px',marginTop:'2px'}}>
                             {p >= threshold
-                              ? `✅ Can skip ${canBunk(s.conducted, s.attended, threshold)} more`
+                              ? `✅ Can bunk ${canBunk(s.conducted, s.attended, threshold)} more`
                               : `📚 Need ${needAtt(s.conducted, s.attended, threshold)} more`}
                           </div>
                         </div>
                         {/* Percentage label */}
                         <div className="bar-pct-label" style={{color:col}}>{p.toFixed(0)}%</div>
-                        {/* Bar — px height so it's always correct */}
+                        {/* Bar */}
                         <div className="bar-rect-outer">
                           <div
                             className="bar-rect"
                             style={{
-                              height: `${barPx}px`,
-                              background: `linear-gradient(to top, ${col}88, ${col})`,
+                              height: barH,
+                              background: `linear-gradient(to top, ${col}99, ${col})`,
                               animationDelay: delay
                             }}
                           />
                         </div>
                         {/* Name */}
-                        <div className="bar-name-label">{shortName}</div>
+                        <div className="bar-name-label">{s.name.replace(' (Lab)', ' Lab').slice(0, 22)}</div>
                       </div>
                     );
                   })}
@@ -1397,19 +1394,14 @@ function parseCyberVidyaData(raw) {
     }
   }
 
-  // ── DEDUPLICATE: keep subject with most classes if exact name collision ──
-  const nameMap = new Map();
-  for (const s of results) {
-    if (!s.name || s.name.length < 2) continue;
+  // ── DEDUPLICATE by exact name (after Lab suffix) ─────────
+  const seen = new Set();
+  return results.filter(s => {
+    if (!s.name || s.name.length < 2) return false;
     const k = s.name.toLowerCase();
-    if (!nameMap.has(k)) {
-      nameMap.set(k, s);
-    } else {
-      // Keep the one with more conducted classes (more data = more reliable)
-      if (s.conducted > nameMap.get(k).conducted) nameMap.set(k, s);
-    }
-  }
-  return Array.from(nameMap.values());
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
 }
 
 // Extract P, S, L, Pct from jammed number string at end of CyberVidya data line
@@ -1449,37 +1441,15 @@ function parseKIETNumbers(dataLine) {
   candidates.sort((a, b) => a.score - b.score);
   return candidates[0];
 }
-// Expand common truncated KIET subject names back to full form
-const KIET_NAME_MAP = {
-  'design and analysis of al':   'Design and Analysis of Algorithms',
-  'design and analysis of algo': 'Design and Analysis of Algorithms',
-  'design and analysis of alg':  'Design and Analysis of Algorithms',
-  'ann and machine':             'ANN and Machine Learning',
-  'aws foun':                    'AWS Foundations & Data Analytics',
-  'soft skills essential':       'Soft Skills Essential-2',
-  'universal human':             'Universal Human Values',
-  'web tech':                    'Web Technology',
-  'data anal':                   'Data Analytics',
-};
-function expandName(raw) {
-  const lower = (raw || '').toLowerCase().trim();
-  for (const [prefix, full] of Object.entries(KIET_NAME_MAP)) {
-    if (lower.startsWith(prefix)) return full;
-  }
-  return raw;
-}
-
 function cleanName(s) {
-  const cleaned = (s || '')
+  return (s || '')
     .replace(/\.\.\./g, '')
-    .replace(/\.{2,}/g, '')
     .replace(/\s+/g, ' ')
     .replace(/[^\w\s\-&()\/]/g, '')
     .trim()
-    .replace(/^[\d\s\.\-]+/, '')
+    .replace(/^[\d\s\.\-]+/, '')   // strip leading numbers
     .trim()
-    .slice(0, 80);
-  return expandName(cleaned);
+    .slice(0, 60);
 }
 
 // ── IMPORT SECTION COMPONENT ────────────────────────────
@@ -1753,13 +1723,12 @@ function parseCyberVidyaAPIData(apiData) {
       : apiData.attendance ? apiData.attendance
       : apiData.result     ? apiData.result : [];
     for (const item of arr) {
-      const rawName  = (item.courseName||item.course_name||item.subject||item.subjectName||item.name||'').trim();
-      const name     = expandName(rawName.replace(/\.{2,}$/, '').trim());
+      const name     = (item.courseName||item.course_name||item.subject||item.subjectName||item.name||'').trim();
       const presents = parseInt(item.presents||item.attended||item.present||0);
       const special  = parseInt(item.specialAttendance||item.special||0);
       const lectures = parseInt(item.lectures||item.totalLectures||item.conducted||0);
       if (name && lectures > 0)
-        results.push({ name: name.slice(0,80), attended: Math.min(presents+special,lectures), conducted: lectures });
+        results.push({ name: name.slice(0,60), attended: Math.min(presents+special,lectures), conducted: lectures });
     }
   } catch(e) { console.warn('[BunkPlanner] API parse error:', e); }
   return results;
@@ -1980,344 +1949,166 @@ function SyncBanner({ subjects, user, onDone, onCancel }) {
 
 
 // ══════════════════════════════════════════════════════════════
-//  CyberVidyaScraper — Popup-based, NO extension needed
-//  Works on mobile + desktop. Injects scraper into popup window.
+//  AutoFetchBanner — One-click CyberVidya fetch card v11
 // ══════════════════════════════════════════════════════════════
-
-const SCRAPER_SCRIPT = `
-(function() {
-  'use strict';
-  var PARENT = window.opener;
-  if (!PARENT) return;
-
-  function post(type, payload) {
-    try { PARENT.postMessage({ _bpp: true, type: type, payload: payload }, '*'); } catch(e) {}
-  }
-  function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
-
-  // Expand truncated KIET names
-  function expandKiet(n) {
-    var l = (n || '').toLowerCase().trim();
-    if (l.startsWith('design and analysis of al')) return 'Design and Analysis of Algorithms';
-    if (l.startsWith('ann and machine'))           return 'ANN and Machine Learning';
-    if (l.startsWith('aws foun'))                  return 'AWS Foundations & Data Analytics';
-    if (l.startsWith('soft skills'))               return 'Soft Skills Essential-2';
-    if (l.startsWith('universal human'))           return 'Universal Human Values';
-    if (l.startsWith('web tech'))                  return 'Web Technology';
-    if (l.startsWith('data anal'))                 return 'Data Analytics';
-    if (l.startsWith('computer networks l'))       return 'Computer Networks Lab';
-    return n;
-  }
-
-  function parseTable() {
-    var results = [];
-    var seen    = {};
-    var tables  = document.querySelectorAll('table');
-
-    for (var ti = 0; ti < tables.length; ti++) {
-      var table = tables[ti];
-      var rows  = Array.from(table.querySelectorAll('tr'));
-      if (rows.length < 3) continue;
-
-      var hdr = null, hdrIdx = -1;
-      for (var i = 0; i < Math.min(rows.length, 5); i++) {
-        var cells = Array.from(rows[i].querySelectorAll('th,td'))
-                        .map(function(c){ return c.innerText.trim().toLowerCase(); });
-        if (cells.some(function(c){ return c === 'course'; }) &&
-            (cells.some(function(c){ return c === 'presents' || c === 'present'; }) ||
-             cells.some(function(c){ return c === 'lectures'; }))) {
-          hdr = cells; hdrIdx = i; break;
-        }
-      }
-      if (!hdr || hdrIdx < 0) continue;
-
-      var cCourse=-1, cComp=-1, cPresents=-1, cSpecial=-1, cLectures=-1;
-      hdr.forEach(function(h, i) {
-        if (h === 'course')                                     cCourse   = i;
-        else if (h === 'course component' || h === 'component') cComp     = i;
-        else if (h === 'presents' || h === 'present')           cPresents = i;
-        else if (h.indexOf('special') >= 0)                     cSpecial  = i;
-        else if (h === 'lectures')                              cLectures = i;
-      });
-      if (cCourse < 0 || cLectures < 0) continue;
-
-      for (var i = hdrIdx + 1; i < rows.length; i++) {
-        var tds   = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length <= Math.max(cCourse, cLectures)) continue;
-        var texts = tds.map(function(t){ return t.innerText.trim(); });
-        if (!/^\d+$/.test(texts[0])) continue;
-
-        var rawName = texts[cCourse] || '';
-        if (!rawName || rawName.length < 3) continue;
-        if (/^(BLENDED|THEORY|PRACTICAL|LAB|TUTORIAL)$/i.test(rawName)) continue;
-        if (/^\d+$/.test(rawName)) continue;
-
-        // Clean trailing dots
-        var name = rawName.replace(/\.+$/, '').trim().slice(0, 80);
-        if (name.length < 2) continue;
-
-        var comp   = (cComp >= 0 && cComp < texts.length) ? texts[cComp].toUpperCase() : '';
-        var suffix = (comp === 'PRACTICAL' || comp === 'LAB') ? ' (Lab)' : '';
-        var full   = expandKiet(name) + suffix;
-        var key    = full.toLowerCase();
-        if (seen[key]) continue;
-
-        var P = cPresents >= 0 ? (parseInt(texts[cPresents]) || 0) : 0;
-        var S = cSpecial  >= 0 ? (parseInt(texts[cSpecial])  || 0) : 0;
-        var L = parseInt(texts[cLectures]) || 0;
-        if (L <= 0) continue;
-
-        seen[key] = true;
-        results.push({ name: full, attended: Math.min(P + S, L), conducted: L });
-      }
-      if (results.length > 0) break;
-    }
-    return results;
-  }
-
-  async function run() {
-    post('status', { step: 'checking' });
-    var found = false;
-    for (var i = 0; i < 30; i++) {
-      var tables = document.querySelectorAll('table');
-      for (var j = 0; j < tables.length; j++) {
-        if (tables[j].querySelectorAll('tbody tr').length > 0 &&
-            (tables[j].innerText || '').indexOf('%') >= 0) {
-          found = true; break;
-        }
-      }
-      if (found) break;
-      await sleep(500);
-    }
-    if (!found) {
-      if (!window.location.href.includes('my-attendance')) {
-        post('status', { step: 'navigating' });
-        window.location.href = 'https://kiet.cybervidya.net/attendance/my-attendance';
-        return;
-      }
-      post('error', { msg: 'Table not found. Please make sure you are logged in to CyberVidya.' });
-      return;
-    }
-    post('status', { step: 'scraping' });
-    await sleep(300);
-    var subjects = parseTable();
-    if (subjects.length === 0) {
-      post('error', { msg: 'Could not read attendance. Please login to CyberVidya and retry.' });
-      return;
-    }
-    post('done', { subjects: subjects });
-  }
-
-  var lastUrl = location.href;
-  var observer = new MutationObserver(function() {
-    if (location.href !== lastUrl) { lastUrl = location.href; setTimeout(run, 1200); }
-  });
-  observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(run, 800); });
-  } else {
-    setTimeout(run, 800);
-  }
-})();
-`;
-
 function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
-  const [phase,     setPhaseRaw] = useState('idle');
+  // Own independent detection — checks BOTH marker IDs
+  const [extInstalled, setExtInstalled] = useState(() =>
+    !!(document.getElementById('bunkplanner-extension-installed') ||
+       document.getElementById('bpp-ext-marker'))
+  );
+  // phase: 'idle' | 'opening' | 'scraping' | 'done' | 'error'
+  const [phase, setPhase] = useState('idle');
   const [statusMsg, setStatusMsg] = useState('');
-  const [progress,  setProgress]  = useState(0);
-  const phaseRef  = React.useRef('idle');
-  const popupRef  = React.useRef(null);
-  const timerRef  = React.useRef(null);
+  const phaseRef = React.useRef('idle');
 
-  function setPhase(p) { phaseRef.current = p; setPhaseRaw(p); }
+  function updatePhase(p) { phaseRef.current = p; setPhase(p); }
 
-  function injectScraper(popup) {
-    try {
-      const doc = popup.document;
-      if (!doc) return false;
-      if (doc.getElementById('_bpp_scraper')) return true;
-      const s = doc.createElement('script');
-      s.id = '_bpp_scraper';
-      s.textContent = SCRAPER_SCRIPT;
-      (doc.head || doc.body || doc.documentElement).appendChild(s);
-      return true;
-    } catch(e) { return false; }
-  }
-
-  function handleFetch() {
-    if (phaseRef.current !== 'idle') return;
-    setPhase('opening');
-    setStatusMsg('Opening CyberVidya...');
-    setProgress(10);
-
-    const W = Math.min(960, window.screen.width  - 40);
-    const H = Math.min(700, window.screen.height - 60);
-    const L = Math.round((window.screen.width  - W) / 2);
-    const T = Math.round((window.screen.height - H) / 2);
-
-    const popup = window.open(
-      'https://kiet.cybervidya.net/attendance/my-attendance',
-      'bpp_cv_popup',
-      `width=${W},height=${H},left=${L},top=${T},resizable=yes,scrollbars=yes`
-    );
-
-    if (!popup) {
-      setPhase('error');
-      setStatusMsg('Popup blocked! Please allow popups for this site and retry.');
-      return;
-    }
-    popupRef.current = popup;
-
-    // Inject scraper as soon as popup document is accessible
-    let tries = 0;
-    const injectIv = setInterval(() => {
-      tries++;
-      if (popup.closed) { clearInterval(injectIv); return; }
-      if (injectScraper(popup)) clearInterval(injectIv);
-      if (tries > 50) clearInterval(injectIv);
-    }, 400);
-
-    // Overall timeout 3 minutes
-    timerRef.current = setTimeout(() => {
-      if (phaseRef.current !== 'idle' && phaseRef.current !== 'done') {
-        setPhase('error');
-        setStatusMsg('Timeout. Please login to CyberVidya and retry.');
-        if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
-      }
-    }, 180000);
-  }
-
-  // Listen for postMessage from popup
+  // ── Poll for extension marker (document_start means it's injected early) ──
   useEffect(() => {
-    function onMsg(e) {
-      const data = e.data;
-      if (!data || !data._bpp) return;
+    function check() {
+      return !!(
+        document.getElementById('bunkplanner-extension-installed') ||
+        document.getElementById('bpp-ext-marker')
+      );
+    }
+    if (extProp || check()) { setExtInstalled(true); return; }
+    let n = 0;
+    const iv = setInterval(() => {
+      n++;
+      if (check()) { setExtInstalled(true); clearInterval(iv); return; }
+      if (n >= 100) clearInterval(iv); // 40s max
+    }, 400);
+    return () => clearInterval(iv);
+  }, [extProp]);
 
-      if (data.type === 'status') {
-        const step = data.payload && data.payload.step;
-        if (step === 'navigating') { setStatusMsg('Navigating to attendance page...'); setProgress(25); }
-        if (step === 'checking')   { setStatusMsg('Waiting for attendance table...'); setPhase('waiting'); setProgress(45); }
-        if (step === 'scraping')   { setStatusMsg('Reading your attendance data...'); setPhase('scraping'); setProgress(75); }
-      }
+  useEffect(() => { if (extProp) setExtInstalled(true); }, [extProp]);
 
-      if (data.type === 'done') {
-        clearTimeout(timerRef.current);
-        const subs = ((data.payload && data.payload.subjects) || []).filter(function(s){ return s.name && s.conducted > 0; });
-        if (subs.length > 0) {
-          setProgress(100);
-          setPhase('done');
-          setStatusMsg(subs.length + ' subjects fetched successfully!');
-          setTimeout(() => {
-            if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
-          }, 700);
-          setTimeout(() => {
-            setPhase('idle'); setStatusMsg(''); setProgress(0);
-            onDataReceived(subs);
-          }, 1100);
-        } else {
-          setPhase('error');
-          setStatusMsg('No subjects found. Please make sure you are logged in.');
-        }
-      }
+  // ── Listen for status updates from background via bridge ──
+  useEffect(() => {
+    function onStatus(e) {
+      const { status, message, count } = e.detail || {};
+      console.log('[AutoFetchBanner] status:', status, message);
+      if (status === 'opening')  { updatePhase('opening');  setStatusMsg('Opening CyberVidya...'); }
+      if (status === 'scraping') { updatePhase('scraping'); setStatusMsg('Scraping attendance data...'); }
+      if (status === 'done')     { updatePhase('done');     setStatusMsg(`${count || ''} subjects ready!`); }
+      if (status === 'error')    { updatePhase('error');    setStatusMsg(message || 'An error occurred. Please retry.'); }
+    }
+    window.addEventListener('bpp-autofetch-status', onStatus);
+    return () => window.removeEventListener('bpp-autofetch-status', onStatus);
+  }, []);
 
-      if (data.type === 'error') {
-        clearTimeout(timerRef.current);
-        setPhase('error');
-        setStatusMsg((data.payload && data.payload.msg) || 'Something went wrong. Please retry.');
-        setProgress(0);
+  // ── Listen for final data (CustomEvent from bridge/injection) ──
+  useEffect(() => {
+    function onSync(e) {
+      if (!['opening','scraping','waiting','done'].includes(phaseRef.current)) return;
+      const subs = ((e.detail || {}).subjects || []).filter(s => s.name && s.conducted > 0);
+      if (subs.length > 0) {
+        updatePhase('idle');
+        setStatusMsg('');
+        onDataReceived(subs);
       }
     }
-    window.addEventListener('message', onMsg);
-    return () => window.removeEventListener('message', onMsg);
+    window.addEventListener('bunkplanner-sync', onSync);
+    return () => window.removeEventListener('bunkplanner-sync', onSync);
   }, [onDataReceived]);
 
-  // Detect popup closed manually
+  // ── Polling fallback for localStorage ──
   useEffect(() => {
-    if (!['opening','waiting','scraping'].includes(phase)) return;
+    if (!['opening','scraping','waiting'].includes(phase)) return;
+    let n = 0;
     const iv = setInterval(() => {
-      if (popupRef.current && popupRef.current.closed) {
+      n++;
+      const raw = localStorage.getItem('bp_pending_sync');
+      if (raw) {
         clearInterval(iv);
-        if (phaseRef.current !== 'done' && phaseRef.current !== 'idle') {
-          setPhase('idle'); setStatusMsg(''); setProgress(0);
-        }
+        localStorage.removeItem('bp_pending_sync');
+        try {
+          const parsed = JSON.parse(raw);
+          const subs = (parsed.subjects || []).filter(s => s.name && s.conducted > 0);
+          if (subs.length > 0) { updatePhase('idle'); setStatusMsg(''); onDataReceived(subs); return; }
+        } catch(e) {}
       }
-    }, 800);
+      if (n >= 90) { updatePhase('error'); setStatusMsg('Timeout. Please login to CyberVidya and retry.'); clearInterval(iv); }
+    }, 600);
     return () => clearInterval(iv);
   }, [phase]);
 
-  useEffect(() => {
-    return () => {
-      clearTimeout(timerRef.current);
-      if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
-    };
-  }, []);
+  function handleFetch() {
+    if (!extInstalled) return;
+    updatePhase('opening');
+    setStatusMsg('Opening CyberVidya...');
+    // Signal bridge.js → background.js → open CyberVidya tab & scrape
+    window.dispatchEvent(new CustomEvent('bpp-open-cybervidya', { detail: { returnUrl: window.location.href } }));
+  }
 
-  const isLoading = ['opening','waiting','scraping'].includes(phase);
+  const isLoading = ['opening','scraping','waiting'].includes(phase);
 
-  const steps = [
-    {n:'1', l:'Click Fetch'},
-    {n:'2', l:'Login on CyberVidya'},
-    {n:'3', l:'Auto Scrape'},
-    {n:'4', l:'Import'},
+  const stepLabels = [
+    { n:'1', l:'Click',     active: phase !== 'idle' },
+    { n:'2', l:'CyberVidya',     active: phase === 'opening' || phase === 'scraping' },
+    { n:'3', l:'Auto scrape',    active: phase === 'scraping' },
+    { n:'4', l:'Import',    active: phase === 'done' },
   ];
 
   return (
     <div className="cv-fetch-banner">
       <div className="cv-banner-inner">
-        <div className="cv-banner-icon" style={{fontSize: isLoading ? '26px' : '30px'}}>
-          {phase==='error'?'❌': phase==='done'?'✅': isLoading?'⏳':'🎓'}
+        <div className="cv-banner-icon" style={{fontSize: isLoading ? '28px' : '32px'}}>
+          {isLoading ? '⏳' : phase === 'done' ? '✅' : phase === 'error' ? '❌' : '🎓'}
         </div>
         <div className="cv-banner-text">
           <div className="cv-banner-title">
-            {phase==='error' ? 'Something went wrong' :
-             phase==='done'  ? 'Attendance fetched! 🎉' :
+            {phase === 'error' ? 'Something went wrong 😅' :
+             phase === 'done'  ? 'Data is ready! 🎉' :
              'Fetch Attendance from CyberVidya'}
           </div>
           <div className="cv-banner-sub">
-            {statusMsg || 'Works on mobile & desktop — no extension needed!'}
+            {statusMsg || 'Auto-import all your subjects\' attendance in one click!'}
           </div>
-          {!isLoading && phase === 'idle' && (
-            <div className="cv-banner-steps">
-              {steps.map(({n,l}, i, a) => (
-                <React.Fragment key={n}>
-                  <div className="cv-step"><span>{n}</span> {l}</div>
-                  {i < a.length-1 && <span className="cv-step-arrow">→</span>}
-                </React.Fragment>
-              ))}
-            </div>
-          )}
+          <div className="cv-banner-steps">
+            {stepLabels.map(({n, l, active}, i, a) => (
+              <React.Fragment key={n}>
+                <div className="cv-step" style={{opacity: active ? 1 : 0.45, fontWeight: active ? 700 : 400}}>
+                  <span>{n}</span> {l}
+                </div>
+                {i < a.length-1 && <span className="cv-step-arrow">→</span>}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
         {phase === 'idle' && (
-          <button className="cv-fetch-btn" onClick={handleFetch}>
+          <button
+            className="cv-fetch-btn"
+            onClick={handleFetch}
+            disabled={!extInstalled}
+            title={!extInstalled ? 'Install the extension first' : 'Fetch attendance from CyberVidya'}
+          >
             <span className="cv-fetch-btn-shine"/>
-            <span style={{fontSize:'16px'}}>⚡</span>
-            Fetch Attendance
+            <span style={{fontSize:'16px'}}>{extInstalled ? '⚡' : '🔌'}</span>
+            {extInstalled ? 'Fetch Attendance' : 'Extension Needed'}
           </button>
         )}
+
         {isLoading && (
           <div className="cv-fetching-state">
             <span className="cv-dot"/><span className="cv-dot"/><span className="cv-dot"/>
           </div>
         )}
+
         {phase === 'error' && (
           <button className="btn btn-ghost" style={{padding:'8px 16px',fontSize:'13px',flexShrink:0}}
-            onClick={() => { setPhase('idle'); setStatusMsg(''); setProgress(0); }}>
+            onClick={() => { updatePhase('idle'); setStatusMsg(''); }}>
             🔄 Retry
           </button>
         )}
       </div>
 
-      {isLoading && (
-        <div className="popscrape-progress" style={{marginTop:'14px',marginBottom:0}}>
-          <div className="popscrape-progress-fill" style={{width:`${progress}%`}}/>
-        </div>
-      )}
-
-      {phase === 'idle' && (
-        <div style={{marginTop:'9px',fontSize:'11px',color:'var(--text3)',lineHeight:1.5}}>
-          💡 A small popup window will open — allow popups if prompted. Works on phone &amp; desktop.
+      {phase === 'idle' && !extInstalled && (
+        <div className="cv-no-ext">
+          ⚠️ <strong>Extension not installed.</strong>{' '}
+          Install <strong>extension_v11.zip</strong> from brave://extensions/ first — then reload the page.
         </div>
       )}
     </div>
