@@ -2140,7 +2140,9 @@ function ProfileDropdown({ user, displayName, initials, profileData, setProfileD
 
   function save() {
     const updated = { ...profileData, ...form };
-    localStorage.setItem('bpp_profile', JSON.stringify(updated));
+    // Save under this user's UID-specific key
+    const key = user.uid ? 'bpp_profile_' + user.uid : 'bpp_profile';
+    localStorage.setItem(key, JSON.stringify(updated));
     setProfileData(updated);
     setEditing(false);
     toast('Profile saved! ✅', 'success');
@@ -2282,9 +2284,10 @@ function App() {
   const [syncBanner, setSyncBanner] = useState(null);
   const [extInstalled, setExtInstalled] = useState(false);
   const [profileOpen,  setProfileOpen]  = useState(false);
-  const [profileData,  setProfileData]  = useState(() => {
-    try { return JSON.parse(localStorage.getItem('bpp_profile') || '{}'); } catch(e) { return {}; }
-  });
+  // Profile is stored per-user using their UID as part of the key
+  // This prevents one user's data leaking to another
+  function profileKey(uid) { return uid ? 'bpp_profile_' + uid : null; }
+  const [profileData,  setProfileData]  = useState({});  // starts empty — loaded after auth
 
   // Close profile dropdown on outside click
   useEffect(()=>{
@@ -2302,7 +2305,20 @@ function App() {
     const saved = localStorage.getItem('bpp_theme');
     if(saved) setDark(saved==='dark');
     if(firebaseReady) {
-      const unsub = auth.onAuthStateChanged(u => setUser(u||null));
+      const unsub = auth.onAuthStateChanged(u => {
+        setUser(u||null);
+        if (u) {
+          // Load THIS user's profile from their UID-specific key
+          const key = profileKey(u.uid);
+          try {
+            const saved = JSON.parse(localStorage.getItem(key) || '{}');
+            setProfileData(saved);
+          } catch(e) { setProfileData({}); }
+        } else {
+          // Logged out — clear profile from state (not from storage)
+          setProfileData({});
+        }
+      });
       return ()=>unsub();
     } else { setUser(null); }
   },[]);
@@ -2440,6 +2456,9 @@ function App() {
   },[dark]);
 
   async function logout() {
+    // Clear user-specific state before signing out
+    setProfileData({});
+    setProfileOpen(false);
     await auth.signOut();
     setUser(null);
     toast('Logged out! See you 👋','info');
@@ -2506,7 +2525,7 @@ function App() {
       <main className="main">
         <div className="hero">
           <div className="hero-badge">
-            <span>👋</span> Welcome back, {profileData.displayName || displayName}!
+            <span>👋</span> Welcome back, {displayName}!
           </div>
           <h1 className="hero-title">Bunk Smarter,<br/>Not Harder</h1>
           <p className="hero-sub">Data syncs real-time across all devices.<br/>Add on laptop, view on phone! ☁️</p>
