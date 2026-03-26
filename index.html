@@ -202,6 +202,19 @@ input[type=number]{-moz-appearance:textfield}
 .cv-dot:nth-child(2){animation-delay:.2s;}.cv-dot:nth-child(3){animation-delay:.4s;}
 .ext-active-pill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid rgba(52,211,153,.22);padding:4px 10px;border-radius:100px;animation:fadeIn .4s ease;}
 .ext-pulse-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:dotPulse 2s ease infinite;}
+
+/* ── Threshold Selector ── */
+.threshold-control{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;transition:border-color .2s;}
+.threshold-control:hover{border-color:var(--border2);}
+.threshold-label{font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;}
+.threshold-btns{display:flex;align-items:center;gap:4px;}
+.threshold-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;}
+.threshold-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+.threshold-val{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--accent2);min-width:36px;text-align:center;}
+.threshold-presets{display:flex;gap:4px;}
+.threshold-preset{padding:3px 9px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
+.threshold-preset:hover{border-color:var(--accent2);color:var(--accent2);}
+.threshold-preset.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent2);}
 </style>
 </head>
 <body>
@@ -593,7 +606,17 @@ function SubjectCard({subject, onEdit, onDelete, target}) {
 function Subjects({user}) {
   const [subjects,setSubjects] = useState([]);
   const [syncing,setSyncing]   = useState(true);
-  const TARGET = 75;
+  // ── Threshold: read from localStorage, default 75 ──
+  const [TARGET, setTargetRaw] = useState(() => {
+    const saved = localStorage.getItem('bpp_threshold');
+    const n = parseInt(saved);
+    return (n >= 1 && n <= 100) ? n : 75;
+  });
+  function setTarget(val) {
+    const n = Math.min(100, Math.max(1, Math.round(val)));
+    setTargetRaw(n);
+    localStorage.setItem('bpp_threshold', String(n));
+  }
   const [showAdd,setShowAdd]   = useState(false);
   const [editModal,setEdit]    = useState(null);
   const [form,setForm]         = useState({name:'',conducted:'',attended:''});
@@ -769,6 +792,20 @@ function Subjects({user}) {
           <div className="sync-label">
             <span className={`sync-dot ${syncing?'syncing':''}`}/>
             {syncing ? 'Syncing...' : '☁️ Synced across all devices'}
+          </div>
+        </div>
+        {/* ── Threshold Control ── */}
+        <div className="threshold-control">
+          <span className="threshold-label">Target</span>
+          <div className="threshold-btns">
+            <button className="threshold-btn" onClick={()=>setTarget(TARGET-1)}>−</button>
+            <span className="threshold-val">{TARGET}%</span>
+            <button className="threshold-btn" onClick={()=>setTarget(TARGET+1)}>+</button>
+          </div>
+          <div className="threshold-presets">
+            {[65,70,75,80].map(v=>(
+              <button key={v} className={`threshold-preset ${TARGET===v?'active':''}`} onClick={()=>setTarget(v)}>{v}%</button>
+            ))}
           </div>
         </div>
         <button className="btn btn-primary" onClick={()=>setShowAdd(p=>!p)}>
