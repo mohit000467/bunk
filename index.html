@@ -268,6 +268,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ── Footer ── */
 .footer{text-align:center;padding:28px 24px 44px;color:var(--text3);font-size:13px}
+
+/* ── Email Verification Screen ── */
+.verify-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 60% 40%,rgba(52,211,153,.1) 0%,transparent 60%)}
+.verify-card{width:100%;max-width:440px;padding:44px 38px;animation:bounceIn .4s ease;text-align:center}
+.verify-icon-wrap{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,rgba(52,211,153,.2),rgba(124,106,247,.15));border:1px solid rgba(52,211,153,.3);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 24px;animation:float 3s ease infinite}
+.verify-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:10px}
+.verify-sub{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:28px}
+.verify-email-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(124,106,247,.1);border:1px solid rgba(124,106,247,.25);border-radius:100px;padding:6px 16px;font-size:13px;font-weight:600;color:var(--accent2);margin-bottom:28px}
+.verify-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;text-align:left}
+.verify-step{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.verify-step-num{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.verify-step-text{font-size:13px;color:var(--text2);line-height:1.5}
+.verify-step-text strong{color:var(--text);font-weight:600}
+.verify-actions{display:flex;flex-direction:column;gap:10px}
+.verify-resend-info{font-size:11px;color:var(--text3);margin-top:8px}
+@keyframes checkBounce{0%{transform:scale(0)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+.verify-success-icon{font-size:64px;animation:checkBounce .5s ease}
 .footer span{color:var(--accent)}
 
 /* ── Responsive ── */
@@ -630,6 +647,134 @@ function MiniBar({pct, target}) {
   );
 }
 
+// ══════════════════════════════════════════════════════════════
+//  EmailVerificationScreen — shown after signup until email verified
+// ══════════════════════════════════════════════════════════════
+function EmailVerificationScreen({ user, onVerified, onLogout }) {
+  const [checking,   setChecking]   = useState(false);
+  const [resending,  setResending]  = useState(false);
+  const [resendCool, setResendCool] = useState(0);    // cooldown seconds
+  const [justResent, setJustResent] = useState(false);
+  const coolRef = React.useRef(null);
+
+  // Auto-check every 4s if user has clicked the link
+  useEffect(() => {
+    const iv = setInterval(async () => {
+      try {
+        await user.reload();
+        if (user.emailVerified) {
+          clearInterval(iv);
+          onVerified(user);
+        }
+      } catch(e) {}
+    }, 4000);
+    return () => clearInterval(iv);
+  }, [user, onVerified]);
+
+  // Countdown for resend cooldown
+  function startCooldown(secs) {
+    setResendCool(secs);
+    clearInterval(coolRef.current);
+    coolRef.current = setInterval(() => {
+      setResendCool(prev => {
+        if (prev <= 1) { clearInterval(coolRef.current); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  async function resendEmail() {
+    if (resendCool > 0) return;
+    setResending(true);
+    try {
+      await user.sendEmailVerification();
+      setJustResent(true);
+      toast('Verification email sent! Check your inbox 📧', 'success');
+      startCooldown(60); // 60s cooldown between resends
+      setTimeout(() => setJustResent(false), 4000);
+    } catch(err) {
+      if (err.code === 'auth/too-many-requests') {
+        toast('Too many requests. Wait a minute and try again.', 'error');
+        startCooldown(60);
+      } else {
+        toast(err.message, 'error');
+      }
+    }
+    setResending(false);
+  }
+
+  async function checkNow() {
+    setChecking(true);
+    try {
+      await user.reload();
+      if (user.emailVerified) {
+        onVerified(user);
+      } else {
+        toast('Email not verified yet. Please check your inbox.', 'error');
+      }
+    } catch(e) {
+      toast('Could not check status. Please try again.', 'error');
+    }
+    setChecking(false);
+  }
+
+  return (
+    <div className="verify-page">
+      <div className="glass verify-card">
+        <div className="verify-icon-wrap">📧</div>
+        <div className="verify-title">Verify Your Email</div>
+        <p className="verify-sub">
+          We sent a verification link to:
+        </p>
+        <div className="verify-email-chip">
+          ✉️ {user.email}
+        </div>
+
+        <div className="verify-steps">
+          <div className="verify-step">
+            <div className="verify-step-num">1</div>
+            <div className="verify-step-text">Open your email inbox — check <strong>Promotions</strong> or <strong>Spam</strong> folder too</div>
+          </div>
+          <div className="verify-step">
+            <div className="verify-step-num">2</div>
+            <div className="verify-step-text">Click the <strong>"Verify Email"</strong> button in the email from Firebase</div>
+          </div>
+          <div className="verify-step">
+            <div className="verify-step-num">3</div>
+            <div className="verify-step-text">Come back here — page will <strong>auto-detect</strong> and log you in!</div>
+          </div>
+        </div>
+
+        <div className="verify-actions">
+          <button className="btn btn-primary btn-full" onClick={checkNow} disabled={checking}>
+            {checking ? '⏳ Checking...' : '✅ I've Verified — Check Now'}
+          </button>
+          <button
+            className="btn btn-ghost btn-full"
+            onClick={resendEmail}
+            disabled={resending || resendCool > 0}
+          >
+            {resending ? '⏳ Sending...' :
+             resendCool > 0 ? `📧 Resend in ${resendCool}s` :
+             justResent ? '✅ Sent!' :
+             '📧 Resend Verification Email'}
+          </button>
+          <button
+            className="btn btn-full"
+            style={{background:'none',border:'none',color:'var(--text3)',fontSize:'12px',cursor:'pointer',padding:'6px'}}
+            onClick={onLogout}
+          >
+            ← Use a different account
+          </button>
+        </div>
+        <div className="verify-resend-info">
+          🔄 This page checks automatically every few seconds
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AuthScreen({onAuth}) {
   const [mode,setMode]       = useState('login');
   const [name,setName]       = useState('');
@@ -639,6 +784,8 @@ function AuthScreen({onAuth}) {
   const [loading,setLoading] = useState(false);
   const [errors,setErrors]   = useState({});
   const [resetSent,setResetSent] = useState(false);
+  // After signup — show verification screen
+  const [pendingUser, setPendingUser] = useState(null);
 
   function validate() {
     const e={};
@@ -659,13 +806,55 @@ function AuthScreen({onAuth}) {
         setResetSent(true);
       } else if(mode==='login') {
         const c = await auth.signInWithEmailAndPassword(email.trim(), pass);
+        // ── SECURITY: Block unverified users from logging in ──
+        if (!c.user.emailVerified) {
+          // Send fresh verification email if not verified
+          try { await c.user.sendEmailVerification(); } catch(e) {}
+          await auth.signOut();
+          setPendingUser({ email: c.user.email, uid: c.user.uid,
+            // Create a minimal proxy to show the screen
+            sendEmailVerification: () => auth.currentUser?.sendEmailVerification(),
+            reload: () => auth.currentUser?.reload(),
+            get emailVerified() { return auth.currentUser?.emailVerified || false; }
+          });
+          toast('Please verify your email first. Check your inbox! 📧', 'error');
+          setLoading(false);
+          return;
+        }
         toast('Welcome back! 👋','success');
         onAuth(c.user);
       } else {
+        // Signup flow
         const c = await auth.createUserWithEmailAndPassword(email.trim(), pass);
         await c.user.updateProfile({displayName: name.trim()});
-        toast(`Welcome ${name}! 🎉`,'success');
-        onAuth(c.user);
+        // Send verification email
+        await c.user.sendEmailVerification();
+        // Sign out until verified
+        await auth.signOut();
+        // Show verification screen using a temp user object
+        setPendingUser({
+          email: email.trim(),
+          uid: c.user.uid,
+          emailVerified: false,
+          sendEmailVerification: async () => {
+            // Re-login temporarily to send email (user is signed out)
+            const tmp = await auth.signInWithEmailAndPassword(email.trim(), pass);
+            await tmp.user.sendEmailVerification();
+            await auth.signOut();
+          },
+          reload: async () => {
+            const tmp = await auth.signInWithEmailAndPassword(email.trim(), pass);
+            await tmp.user.reload();
+            if (tmp.user.emailVerified) {
+              onAuth(tmp.user);
+            } else {
+              await auth.signOut();
+            }
+          }
+        });
+        toast(`Account created! Check your inbox to verify your email 📧`, 'success');
+        setLoading(false);
+        return;
       }
     } catch(err) {
       const m = err.code==='auth/user-not-found'       ? 'No account found with this email' :
@@ -680,6 +869,20 @@ function AuthScreen({onAuth}) {
   }
 
   function switchMode(m) { setMode(m); setErrors({}); setResetSent(false); }
+
+  // ── Show verification screen after signup ──
+  if (pendingUser) {
+    return (
+      <>
+        <EmailVerificationScreen
+          user={pendingUser}
+          onVerified={(u) => { toast('Email verified! Welcome 🎉', 'success'); onAuth(u); }}
+          onLogout={() => { setPendingUser(null); setMode('login'); setPass(''); }}
+        />
+        <ToastContainer/>
+      </>
+    );
+  }
 
   return (
     <div className="auth-page">
@@ -2302,7 +2505,19 @@ function App() {
     const saved = localStorage.getItem('bpp_theme');
     if(saved) setDark(saved==='dark');
     if(firebaseReady) {
-      const unsub = auth.onAuthStateChanged(u => setUser(u||null));
+      const unsub = auth.onAuthStateChanged(async u => {
+        if (!u) { setUser(null); return; }
+        // Reload to get fresh emailVerified status from server
+        try { await u.reload(); } catch(e) {}
+        if (!u.emailVerified) {
+          // Signed in but not verified — sign them out and show auth screen
+          // (They will see the verification screen if they just signed up)
+          await auth.signOut();
+          setUser(null);
+        } else {
+          setUser(u);
+        }
+      });
       return ()=>unsub();
     } else { setUser(null); }
   },[]);
