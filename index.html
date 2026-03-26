@@ -1656,347 +1656,286 @@ function SyncBanner({ subjects, user, onDone, onCancel }) {
 //  Works on mobile + desktop, no CORS issues via popup window
 // ══════════════════════════════════════════════════════════════
 
-// ── The scraper script injected into the popup via URL hash ──
-// When CyberVidya loads in popup, it reads location.hash, finds
-// this code, and postMessages parsed data back to parent window.
-const SCRAPER_SCRIPT = `
-(function() {
-  'use strict';
-  if (window.__bpp_injected) return;
-  window.__bpp_injected = true;
+// ══════════════════════════════════════════════════════════════
+//  CyberVidya Popup Scraper — FASTEST possible approach
+//  Strategy: encode scraper as a bookmarklet-style blob URL so it
+//  runs the INSTANT the popup's same-origin page is accessible.
+//  No inject delay, no polling wait — MutationObserver fires on
+//  the very first DOM mutation that adds table rows.
+// ══════════════════════════════════════════════════════════════
 
-  const PARENT = window.opener;
-  if (!PARENT) return;
+// ── Scraper function (runs inside CyberVidya popup) ──────────
+function buildScraperScript() {
+  return `(function(){
+  if(window.__bpp)return; window.__bpp=true;
+  var PAR=window.opener; if(!PAR)return;
+  function post(t,p){try{PAR.postMessage({_bpp:true,type:t,payload:p},'*')}catch(e){}}
 
-  function post(type, payload) {
-    try { PARENT.postMessage({ _bpp: true, type, payload }, '*'); } catch(e) {}
-  }
-
-  function parseTable() {
-    const results = [];
-    const seen    = new Set();
-    const tables  = document.querySelectorAll('table');
-
-    for (const table of tables) {
-      const rows = Array.from(table.querySelectorAll('tr'));
-      if (rows.length < 3) continue;
-
-      let hdr = null, hdrIdx = -1;
-      for (let i = 0; i < Math.min(rows.length, 5); i++) {
-        const cells = Array.from(rows[i].querySelectorAll('th,td'))
-                          .map(c => c.innerText.trim().toLowerCase());
-        if (cells.some(c => c === 'course') &&
-            (cells.some(c => c === 'presents' || c === 'present') || cells.some(c => c === 'lectures'))) {
-          hdr = cells; hdrIdx = i; break;
-        }
+  function parse(){
+    var res=[],seen={},tables=document.querySelectorAll('table');
+    for(var ti=0;ti<tables.length;ti++){
+      var rows=tables[ti].querySelectorAll('tr');
+      if(rows.length<3)continue;
+      var hdr=null,hi=-1,cC=-1,cComp=-1,cP=-1,cS=-1,cL=-1;
+      for(var i=0;i<Math.min(rows.length,5);i++){
+        var cells=[].slice.call(rows[i].querySelectorAll('th,td')).map(function(c){return c.innerText.trim().toLowerCase();});
+        if(cells.some(function(c){return c==='course';})&&(cells.some(function(c){return c==='presents'||c==='present';})||cells.some(function(c){return c==='lectures';}))){hdr=cells;hi=i;break;}
       }
-      if (!hdr || hdrIdx < 0) continue;
-
-      let cCourse=-1, cComp=-1, cPresents=-1, cSpecial=-1, cLectures=-1;
-      hdr.forEach((h,i) => {
-        if (h === 'course')                                     cCourse   = i;
-        else if (h === 'course component' || h === 'component') cComp     = i;
-        else if (h === 'presents' || h === 'present')           cPresents = i;
-        else if (h.includes('special'))                         cSpecial  = i;
-        else if (h === 'lectures')                              cLectures = i;
+      if(!hdr)continue;
+      hdr.forEach(function(h,i){
+        if(h==='course')cC=i;
+        else if(h==='course component'||h==='component')cComp=i;
+        else if(h==='presents'||h==='present')cP=i;
+        else if(h.indexOf('special')>=0)cS=i;
+        else if(h==='lectures')cL=i;
       });
-      if (cCourse < 0 || cLectures < 0) continue;
-
-      for (let i = hdrIdx + 1; i < rows.length; i++) {
-        const tds   = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length <= Math.max(cCourse, cLectures)) continue;
-        const texts = tds.map(t => t.innerText.trim());
-        if (!/^\d+$/.test(texts[0])) continue;
-
-        const rawName = texts[cCourse] || '';
-        if (!rawName || rawName.length < 3) continue;
-        if (/^(BLENDED|THEORY|PRACTICAL|LAB|TUTORIAL)$/i.test(rawName)) continue;
-        if (/^\d+$/.test(rawName)) continue;
-
-        const name = rawName.replace(/\.{2,}$/, '').trim().slice(0, 60);
-        if (name.length < 2) continue;
-
-        const comp   = (cComp >= 0 && cComp < texts.length) ? texts[cComp].toUpperCase() : '';
-        const suffix = (comp === 'PRACTICAL' || comp === 'LAB') ? ' (Lab)' : '';
-        const full   = name + suffix;
-        const key    = full.toLowerCase();
-        if (seen.has(key)) continue;
-
-        const P = cPresents >= 0 ? (parseInt(texts[cPresents]) || 0) : 0;
-        const S = cSpecial  >= 0 ? (parseInt(texts[cSpecial])  || 0) : 0;
-        const L = parseInt(texts[cLectures]) || 0;
-        if (L <= 0) continue;
-
-        seen.add(key);
-        results.push({ name: full, attended: Math.min(P + S, L), conducted: L });
+      if(cC<0||cL<0)continue;
+      for(var r=hi+1;r<rows.length;r++){
+        var tds=[].slice.call(rows[r].querySelectorAll('td'));
+        if(tds.length<=Math.max(cC,cL))continue;
+        var tx=tds.map(function(t){return t.innerText.trim();});
+        if(!/^\d+$/.test(tx[0]))continue;
+        var raw=tx[cC]||'';
+        if(!raw||raw.length<3)continue;
+        if(/^(BLENDED|THEORY|PRACTICAL|LAB|TUTORIAL)$/i.test(raw))continue;
+        if(/^\d+$/.test(raw))continue;
+        var nm=raw.replace(/\.{2,}$/,'').trim().slice(0,60);
+        if(nm.length<2)continue;
+        var comp=cComp>=0&&cComp<tx.length?tx[cComp].toUpperCase():'';
+        var suf=(comp==='PRACTICAL'||comp==='LAB')?' (Lab)':'';
+        var full=nm+suf, key=full.toLowerCase();
+        if(seen[key])continue;
+        var P=cP>=0?(parseInt(tx[cP])||0):0;
+        var S=cS>=0?(parseInt(tx[cS])||0):0;
+        var L=parseInt(tx[cL])||0;
+        if(L<=0)continue;
+        seen[key]=1;
+        res.push({name:full,attended:Math.min(P+S,L),conducted:L});
       }
-      if (results.length > 0) break;
+      if(res.length>0)break;
     }
-    return results;
+    return res;
   }
 
-  function tableReady() {
-    const tables = document.querySelectorAll('table');
-    for (const t of tables) {
-      if (t.querySelectorAll('tbody tr').length > 0 && (t.innerText||'').includes('%')) return true;
-    }
-    return false;
-  }
-
-  function tryParse() {
-    const subjects = parseTable();
-    if (subjects.length > 0) {
-      post('done', { subjects });
-      return true;
+  function tableReady(){
+    var tables=document.querySelectorAll('table');
+    for(var i=0;i<tables.length;i++){
+      if(tables[i].querySelectorAll('tbody tr').length>0&&(tables[i].innerText||'').indexOf('%')>=0)return true;
     }
     return false;
   }
 
-  function run() {
-    // If not on attendance page, navigate there immediately
-    if (!window.location.href.includes('my-attendance')) {
-      post('status', { step: 'navigating' });
-      window.location.href = 'https://kiet.cybervidya.net/attendance/my-attendance';
+  function doScrape(){
+    var subs=parse();
+    if(subs.length>0){post('done',{subjects:subs});return true;}
+    return false;
+  }
+
+  function run(){
+    if(window.location.href.indexOf('my-attendance')<0){
+      post('status',{step:'navigating'});
+      window.location.href='https://kiet.cybervidya.net/attendance/my-attendance';
       return;
     }
-
-    post('status', { step: 'checking' });
-
-    // Try immediately — table may already be loaded
-    if (tableReady()) {
-      post('status', { step: 'scraping' });
-      if (tryParse()) return;
-    }
-
-    // Use MutationObserver — fires as soon as table rows appear (much faster than polling)
-    let done = false;
-    const obs = new MutationObserver(() => {
-      if (done) return;
-      if (tableReady()) {
-        done = true;
-        obs.disconnect();
-        post('status', { step: 'scraping' });
-        if (!tryParse()) {
-          post('error', { msg: 'Could not read attendance. Please login to CyberVidya.' });
-        }
+    post('status',{step:'checking'});
+    if(tableReady()&&doScrape())return;
+    var done=false;
+    var obs=new MutationObserver(function(){
+      if(done)return;
+      if(tableReady()){
+        done=true;obs.disconnect();
+        post('status',{step:'scraping'});
+        if(!doScrape())post('error',{msg:'Could not read attendance. Please login to CyberVidya.'});
       }
     });
-    obs.observe(document.documentElement, { childList: true, subtree: true });
-
-    // Fallback timeout — if table never appears in 12s
-    setTimeout(() => {
-      if (!done) {
-        done = true;
-        obs.disconnect();
-        post('error', { msg: 'Attendance table not found. Please login to CyberVidya and try again.' });
-      }
-    }, 12000);
+    obs.observe(document.documentElement,{childList:true,subtree:true});
+    setTimeout(function(){
+      if(!done){done=true;obs.disconnect();post('error',{msg:'Timeout. Please login to CyberVidya and try again.'});}
+    },15000);
   }
 
-  // Watch for SPA navigation (URL changes without page reload)
-  let lastUrl = location.href;
-  new MutationObserver(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
-      window.__bpp_injected = false; // allow re-run
-      setTimeout(run, 300);
-    }
-  }).observe(document.documentElement, { childList: true, subtree: true });
+  var lastUrl=location.href;
+  new MutationObserver(function(){
+    if(location.href!==lastUrl){lastUrl=location.href;window.__bpp=false;setTimeout(run,200);}
+  }).observe(document.documentElement,{childList:true,subtree:true});
 
-  // Run immediately — no artificial delay
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run);
-  } else {
-    run();
-  }
-})();
-`;
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',run);}
+  else{run();}
+})();`;
+}
 
 // ── AutoFetchBanner component ─────────────────────────────────
-function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
-  // phase: 'idle' | 'popup_open' | 'waiting' | 'scraping' | 'done' | 'error'
-  const [phase,     setPhaseState] = useState('idle');
-  const [statusMsg, setStatusMsg]  = useState('');
-  const [progress,  setProgress]   = useState(0);
-  const phaseRef  = React.useRef('idle');
-  const popupRef  = React.useRef(null);
-  const timerRef  = React.useRef(null);
+function AutoFetchBanner({ onDataReceived }) {
+  // phase: 'idle' | 'loading' | 'done' | 'error'
+  const [phase,     setPhaseRaw] = useState('idle');
+  const [statusMsg, setStatusMsg] = useState('');
+  const [progress,  setProgress]  = useState(0);
+  const phaseRef = React.useRef('idle');
+  const popupRef = React.useRef(null);
+  const timerRef = React.useRef(null);
+  const injectIv = React.useRef(null);
 
-  function setPhase(p) { phaseRef.current = p; setPhaseState(p); }
+  function setPhase(p) { phaseRef.current = p; setPhaseRaw(p); }
 
-  // ── Inject scraper into popup via <script> tag ────────────
-  function injectScraperIntoPopup(popup) {
+  function cleanup() {
+    clearTimeout(timerRef.current);
+    clearInterval(injectIv.current);
+  }
+
+  // ── Inject scraper into popup ──────────────────────────────
+  function tryInject(popup) {
     try {
       const doc = popup.document;
-      if (!doc) return false;
-      // Only inject once
-      if (doc.getElementById('_bpp_scraper')) return true;
+      if (!doc || !doc.documentElement) return false;
+      if (doc.getElementById('__bpp_s')) return true; // already injected
       const s = doc.createElement('script');
-      s.id = '_bpp_scraper';
-      s.textContent = SCRAPER_SCRIPT;
+      s.id = '__bpp_s';
+      s.textContent = buildScraperScript();
       (doc.head || doc.body || doc.documentElement).appendChild(s);
       return true;
     } catch(e) {
-      // Cross-origin — can't inject yet (page hasn't loaded or is on CyberVidya login)
-      return false;
+      return false; // cross-origin not ready yet
     }
   }
 
-  // ── Main: open popup window ───────────────────────────────
+  // ── Open popup ─────────────────────────────────────────────
   function handleFetch() {
     if (phaseRef.current !== 'idle') return;
-    setPhase('popup_open');
-    setStatusMsg('Opening CyberVidya in a popup...');
-    setProgress(10);
+    setPhase('loading');
+    setStatusMsg('Opening CyberVidya...');
+    setProgress(15);
 
-    const W = Math.min(960, window.screen.width  - 40);
-    const H = Math.min(700, window.screen.height - 60);
-    const L = Math.round((window.screen.width  - W) / 2);
-    const T = Math.round((window.screen.height - H) / 2);
+    // Open popup — direct to attendance page
+    const W = Math.min(900, screen.width  - 40);
+    const H = Math.min(650, screen.height - 60);
+    const L = Math.round((screen.width  - W) / 2);
+    const T = Math.round((screen.height - H) / 2);
 
     const popup = window.open(
       'https://kiet.cybervidya.net/attendance/my-attendance',
-      'bpp_scraper_popup',
-      `width=${W},height=${H},left=${L},top=${T},resizable=yes,scrollbars=yes`
+      'bpp_cv',
+      `width=${W},height=${H},left=${L},top=${T},scrollbars=yes`
     );
 
     if (!popup) {
       setPhase('error');
-      setStatusMsg('Popup was blocked! Please allow popups for this site and try again.');
+      setStatusMsg('Popup blocked! Click the address bar and allow popups, then retry.');
       return;
     }
 
     popupRef.current = popup;
 
-    // ── Inject scraper as fast as possible (100ms polling) ──
-    let injectAttempts = 0;
-    const injectInterval = setInterval(() => {
-      injectAttempts++;
-      if (popup.closed) { clearInterval(injectInterval); return; }
-      const injected = injectScraperIntoPopup(popup);
-      if (injected) {
-        clearInterval(injectInterval);
-        console.log('[BPP] Scraper injected into popup ✅');
+    // Inject as fast as possible — 50ms polling (much faster than before)
+    let attempts = 0;
+    injectIv.current = setInterval(() => {
+      attempts++;
+      if (popup.closed) { clearInterval(injectIv.current); return; }
+      if (tryInject(popup)) {
+        clearInterval(injectIv.current);
+        console.log('[BPP] ✅ Scraper injected at attempt', attempts, '(', attempts * 50, 'ms)');
       }
-      if (injectAttempts > 80) clearInterval(injectInterval); // 8s max
-    }, 100);
+      if (attempts > 120) clearInterval(injectIv.current); // 6s max inject wait
+    }, 50);
 
-    // ── Timeout: 90 seconds total ─────────────────────────────
+    // Master timeout — 60s
     timerRef.current = setTimeout(() => {
-      if (phaseRef.current !== 'idle' && phaseRef.current !== 'done') {
+      if (phaseRef.current === 'loading') {
+        cleanup();
         setPhase('error');
-        setStatusMsg('Timeout. Please login to CyberVidya and try again.');
-        if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+        setStatusMsg('Timeout. Make sure you are logged into CyberVidya and retry.');
+        if (popup && !popup.closed) popup.close();
       }
-    }, 90000);
+    }, 60000);
   }
 
-  // ── Listen for postMessage from popup ─────────────────────
+  // ── Listen for messages from popup ────────────────────────
   useEffect(() => {
-    function onMessage(e) {
-      const data = e.data;
-      if (!data || !data._bpp) return;
+    function onMsg(e) {
+      const d = e.data;
+      if (!d || !d._bpp) return;
 
-      console.log('[BPP] postMessage:', data.type, data.payload);
-
-      if (data.type === 'status') {
-        const step = data.payload?.step;
-        if (step === 'navigating') { setStatusMsg('Navigating to attendance page...'); setProgress(30); }
-        if (step === 'checking')   { setStatusMsg('Detecting attendance table...'); setPhase('waiting'); setProgress(55); }
-        if (step === 'scraping')   { setStatusMsg('Reading your attendance data...'); setPhase('scraping'); setProgress(88); }
+      if (d.type === 'status') {
+        const st = d.payload?.step;
+        if (st === 'navigating') { setStatusMsg('Navigating to attendance page...'); setProgress(30); }
+        if (st === 'checking')   { setStatusMsg('Waiting for attendance data...');   setProgress(55); }
+        if (st === 'scraping')   { setStatusMsg('Scraping attendance data...');       setProgress(80); }
       }
 
-      if (data.type === 'done') {
-        clearTimeout(timerRef.current);
-        const subs = (data.payload?.subjects || []).filter(s => s.name && s.conducted > 0);
+      if (d.type === 'done') {
+        cleanup();
+        const subs = (d.payload?.subjects || []).filter(s => s.name && s.conducted > 0);
         if (subs.length > 0) {
           setProgress(100);
-          setPhase('done');
-          setStatusMsg(`${subs.length} subjects fetched!`);
-          // Close popup after short delay
-          // Close popup immediately
-          setTimeout(() => {
-            if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
-          }, 200);
-          // Show import banner quickly
-          setTimeout(() => {
-            setPhase('idle');
-            setStatusMsg('');
-            setProgress(0);
-            onDataReceived(subs);
-          }, 500);
-        } else {
-          setPhase('error');
-          setStatusMsg('No subjects found. Please make sure you are logged in.');
-        }
-      }
-
-      if (data.type === 'error') {
-        clearTimeout(timerRef.current);
-        setPhase('error');
-        setStatusMsg(data.payload?.msg || 'Something went wrong. Please try again.');
-        setProgress(0);
-      }
-    }
-
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [onDataReceived]);
-
-  // ── Detect popup closed manually ─────────────────────────
-  useEffect(() => {
-    if (!['popup_open','waiting','scraping'].includes(phase)) return;
-    const iv = setInterval(() => {
-      if (popupRef.current && popupRef.current.closed) {
-        clearInterval(iv);
-        if (phaseRef.current !== 'done' && phaseRef.current !== 'idle') {
+          setStatusMsg(`✅ ${subs.length} subjects fetched!`);
+          // Close popup IMMEDIATELY
+          if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+          // Show import banner right away
           setPhase('idle');
           setStatusMsg('');
           setProgress(0);
+          onDataReceived(subs);
+        } else {
+          setPhase('error');
+          setStatusMsg('No subjects found. Please login to CyberVidya first.');
+          if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
         }
       }
-    }, 800);
+
+      if (d.type === 'error') {
+        cleanup();
+        setPhase('error');
+        setStatusMsg(d.payload?.msg || 'Something went wrong. Please try again.');
+        setProgress(0);
+        if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+      }
+    }
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [onDataReceived]);
+
+  // ── Detect popup closed manually ──────────────────────────
+  useEffect(() => {
+    if (phase !== 'loading') return;
+    const iv = setInterval(() => {
+      if (popupRef.current?.closed) {
+        clearInterval(iv);
+        if (phaseRef.current === 'loading') {
+          setPhase('idle'); setStatusMsg(''); setProgress(0);
+        }
+      }
+    }, 500);
     return () => clearInterval(iv);
   }, [phase]);
 
-  // ── Cleanup on unmount ────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      clearTimeout(timerRef.current);
-      if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
-    };
-  }, []);
+  useEffect(() => () => cleanup(), []);
 
-  const isLoading = ['popup_open','waiting','scraping'].includes(phase);
-
-  const steps = [
-    { icon: phase!=='idle'?'✅':'1️⃣', label:'Click Fetch',         done: phase!=='idle',    active: phase==='popup_open' },
-    { icon: ['waiting','scraping','done'].includes(phase)?'✅':'2️⃣', label:'Login & Wait',  done: ['scraping','done'].includes(phase), active: phase==='waiting' },
-    { icon: ['done'].includes(phase)?'✅':'3️⃣',                      label:'Auto Scrape',   done: phase==='done',    active: phase==='scraping' },
-    { icon: '4️⃣',                                                     label:'Import Data',   done: false,             active: phase==='done' },
-  ];
+  const isLoading = phase === 'loading';
 
   return (
     <div className="cv-fetch-banner">
       <div className="cv-banner-inner">
-        <div className="cv-banner-icon" style={{fontSize: isLoading ? '26px' : '30px'}}>
-          {phase==='error' ? '❌' : phase==='done' ? '✅' : isLoading ? '⏳' : '🎓'}
+        <div className="cv-banner-icon">
+          {phase === 'error' ? '❌' : isLoading ? '⏳' : '🎓'}
         </div>
         <div className="cv-banner-text">
           <div className="cv-banner-title">
-            {phase==='error' ? 'Something went wrong' :
-             phase==='done'  ? 'Data fetched! 🎉' :
-             'Fetch Attendance from CyberVidya'}
+            {phase === 'error'
+              ? 'Something went wrong'
+              : isLoading
+              ? 'Fetching attendance...'
+              : 'Fetch Attendance from CyberVidya'}
           </div>
           <div className="cv-banner-sub">
-            {statusMsg || 'Works on mobile & desktop — no extension needed!'}
+            {statusMsg || 'One click — works on mobile & desktop, no extension needed!'}
           </div>
           {!isLoading && phase === 'idle' && (
             <div className="cv-banner-steps">
               {[
-                {n:'1',l:'Click Fetch'},{n:'2',l:'Login on CyberVidya'},
-                {n:'3',l:'Auto Scrape'},{n:'4',l:'Import'}
-              ].map(({n,l},i,a)=>(
+                {n:'1',l:'Click Fetch'},
+                {n:'2',l:'CyberVidya opens'},
+                {n:'3',l:'Auto scrape'},
+                {n:'4',l:'Import'}
+              ].map(({n,l},i,a) => (
                 <React.Fragment key={n}>
                   <div className="cv-step"><span>{n}</span> {l}</div>
                   {i < a.length-1 && <span className="cv-step-arrow">→</span>}
@@ -2006,7 +1945,6 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
           )}
         </div>
 
-        {/* CTA / Loading / Error button */}
         {phase === 'idle' && (
           <button className="cv-fetch-btn" onClick={handleFetch}>
             <span className="cv-fetch-btn-shine"/>
@@ -2027,18 +1965,15 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
         )}
       </div>
 
-      {/* Progress bar */}
       {isLoading && (
-        <div className="popscrape-progress" style={{marginTop:'14px',marginBottom:0}}>
+        <div className="popscrape-progress" style={{marginTop:'12px',marginBottom:0}}>
           <div className="popscrape-progress-fill" style={{width:`${progress}%`}}/>
         </div>
       )}
 
-      {/* Popup blocked warning */}
       {phase === 'idle' && (
-        <div style={{marginTop:'10px',fontSize:'11px',color:'var(--text3)',lineHeight:1.5}}>
-          💡 A popup window will open — please allow popups for this site if prompted.
-          Works on mobile &amp; desktop without any extension.
+        <div style={{marginTop:'8px',fontSize:'11px',color:'var(--text3)',lineHeight:1.5}}>
+          💡 A popup window will open — allow popups if prompted (only once).
         </div>
       )}
     </div>
@@ -2253,7 +2188,6 @@ function App() {
           <p className="hero-sub">Data syncs real-time across all devices.<br/>Add on laptop, view on phone! ☁️</p>
         </div>
         <AutoFetchBanner
-          extInstalled={extInstalled}
           onDataReceived={(subs)=>{ setSyncBanner({subjects:subs}); setTab('subjects'); }}
         />
         <div className="tabs">
