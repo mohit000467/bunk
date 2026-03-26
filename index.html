@@ -550,6 +550,52 @@ try {
   });
   auth = firebase.auth();
   db = firebase.firestore();
+
+// ================= USER DATA SYSTEM =================
+let currentUser = null;
+
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    currentUser = user;
+    await loadUserSubjects();
+    await loadUserProfile();
+  } else {
+    currentUser = null;
+  }
+});
+
+async function saveSubjects(subjects) {
+  if (!currentUser) return;
+  const ref = db.collection("users").doc(currentUser.uid);
+  const batch = db.batch();
+  subjects.forEach(sub => {
+    const docRef = ref.collection("subjects").doc(sub.name);
+    batch.set(docRef, sub);
+  });
+  await batch.commit();
+}
+
+async function loadUserSubjects() {
+  if (!currentUser) return;
+  const snap = await db.collection("users").doc(currentUser.uid).collection("subjects").get();
+  const data = [];
+  snap.forEach(doc => data.push(doc.data()));
+  if (window.setSubjects) window.setSubjects(data);
+}
+
+async function saveProfile(profile) {
+  if (!currentUser) return;
+  await db.collection("users").doc(currentUser.uid).set(profile);
+}
+
+async function loadUserProfile() {
+  if (!currentUser) return;
+  const doc = await db.collection("users").doc(currentUser.uid).get();
+  if (doc.exists && window.setProfile) {
+    window.setProfile(doc.data());
+  }
+}
+
   // SESSION persistence: auto-logout when tab/browser is closed
   auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
     .then(() => { console.log("Firebase ready! (Session persistence)"); })
