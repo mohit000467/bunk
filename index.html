@@ -2140,7 +2140,7 @@ function ProfileDropdown({ user, displayName, initials, profileData, setProfileD
   });
 
   async function save() {
-    const updated = { ...profileData, ...form };
+    const updated = { ...(profileData||{}), ...form };
     // Save to Firestore — tied to this user's UID
     try {
       await db.collection('users').doc(user.uid).collection('profile').doc('data').set(updated, { merge: true });
@@ -2168,7 +2168,7 @@ function ProfileDropdown({ user, displayName, initials, profileData, setProfileD
           <div className="profile-email-small">{user.email}</div>
           {profileData && profileData.college && (
             <div style={{fontSize:'11px',color:'var(--accent2)',marginTop:'3px',fontWeight:600}}>
-              🏫 {profileData.college}
+              🏫 {profileData && profileData.college}
             </div>
           )}
         </div>
@@ -2560,7 +2560,7 @@ function App() {
       <main className="main">
         <div className="hero">
           <div className="hero-badge">
-            <span>👋</span> Welcome back, {profileData.displayName || displayName}!
+            <span>👋</span> Welcome back, {(profileData && profileData.displayName) || displayName}!
           </div>
           <h1 className="hero-title">Bunk Smarter,<br/>Not Harder</h1>
           <p className="hero-sub">Data syncs real-time across all devices.<br/>Add on laptop, view on phone! ☁️</p>
@@ -2568,15 +2568,15 @@ function App() {
             <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'12px',marginTop:'16px',flexWrap:'wrap'}}>
               {profileData && profileData.college && (
                 <div style={{display:'flex',alignItems:'center',gap:'5px',fontSize:'12px',color:'var(--text3)',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'100px',padding:'4px 12px'}}>
-                  🏫 <span style={{color:'var(--text2)',fontWeight:600}}>{profileData.college}</span>
+                  🏫 <span style={{color:'var(--text2)',fontWeight:600}}>{profileData && profileData.college}</span>
                 </div>
               )}
-              {profileData.branch && (
+              {profileData && profileData.branch && (
                 <div style={{display:'flex',alignItems:'center',gap:'5px',fontSize:'12px',color:'var(--text3)',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'100px',padding:'4px 12px'}}>
                   🎓 <span style={{color:'var(--text2)',fontWeight:600}}>{profileData.branch}{profileData.year ? ` · ${profileData.year} Year` : ''}</span>
                 </div>
               )}
-              {profileData.rollNo && (
+              {profileData && profileData.rollNo && (
                 <div style={{display:'flex',alignItems:'center',gap:'5px',fontSize:'12px',color:'var(--text3)',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'100px',padding:'4px 12px'}}>
                   🪪 <span style={{color:'var(--text2)',fontWeight:600}}>{profileData.rollNo}</span>
                 </div>
