@@ -1741,16 +1741,25 @@ function parseCyberVidyaAPIData(apiData) {
       : apiData.attendance ? apiData.attendance
       : apiData.result     ? apiData.result : [];
     for (const item of arr) {
-      let rawName = (item.courseName||item.course_name||item.subject||item.subjectName||item.name||'').trim();
 
-let cleaned = cleanName(rawName);
-let name = normalizeSubjectName(cleaned);
-      const presents = parseInt(item.presents||item.attended||item.present||0);
-      const special  = parseInt(item.specialAttendance||item.special||0);
-      const lectures = parseInt(item.lectures||item.totalLectures||item.conducted||0);
-      if (name && lectures > 0)
-        results.push({ name: name.slice(0,60), attended: Math.min(presents+special,lectures), conducted: lectures });
-    }
+  let rawName = (item.courseName || item.course_name || item.subject || item.subjectName || item.name || '').trim();
+
+  let cleaned = cleanName(rawName);
+
+  let name = normalizeSubjectName(cleaned);
+
+  const presents = parseInt(item.presents || item.attended || item.present || 0);
+  const special  = parseInt(item.specialAttendance || item.special || 0);
+  const lectures = parseInt(item.lectures || item.totalLectures || item.conducted || 0);
+
+  if (name && lectures > 0) {
+    results.push({
+      name: name.slice(0, 60),
+      attended: Math.min(presents + special, lectures),
+      conducted: lectures
+    });
+  }
+}
   } catch(e) { console.warn('[BunkPlanner] API parse error:', e); }
   return results;
 }
