@@ -948,8 +948,26 @@ function Subjects({user}) {
     if(!col){ setSyncing(false); return; }
     setSyncing(true);
     const unsub = col.orderBy('createdAt','asc').onSnapshot(
-      snap => { setSubjects(snap.docs.map(d=>({id:d.id,...d.data()}))); setSyncing(false); },
-      err  => { console.error(err); setSyncing(false); toast('Sync error!','error'); }
+      snap => {
+        const loaded = snap.docs.map(d=>({id:d.id,...d.data()}));
+        setSubjects(loaded);
+        setSyncing(false);
+        // Auto-fix any truncated names in Firestore silently
+        const toFix = snap.docs.filter(d => {
+          const raw = (d.data().name||'').trim();
+          const expanded = expandSubjectName(raw.replace(/\.{2,}/g,'').trim());
+          return expanded !== raw;
+        });
+        if (toFix.length > 0) {
+          const batch = db.batch();
+          toFix.forEach(d => {
+            const expanded = expandSubjectName((d.data().name||'').replace(/\.{2,}/g,'').trim());
+            batch.update(col.doc(d.id), { name: expanded });
+          });
+          batch.commit().catch(()=>{});
+        }
+      },
+      err => { console.error(err); setSyncing(false); toast('Sync error!','error'); }
     );
     return ()=>unsub();
   }, [user && user.uid]);
@@ -966,21 +984,46 @@ function Subjects({user}) {
   async function handleAdd() {
     const e=vf(form); setFErr(e);
     if(Object.keys(e).length) return;
+    const expandedName = expandSubjectName(form.name.trim().replace(/\.{2,}/g,'').trim());
     await col.add({
-      name:form.name.trim(), conducted:+form.conducted, attended:+form.attended,
+      name: expandedName, conducted:+form.conducted, attended:+form.attended,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    toast(`${form.name} added! 🎓`,'success');
+    toast(`${expandedName} added! 🎓`,'success');
     setForm({name:'',conducted:'',attended:''}); setShowAdd(false);
   }
 
   async function handleEditSave() {
     const e=vf(editModal); setFErr(e);
     if(Object.keys(e).length) return;
+    // Expand known truncated names before saving
+    const expandedName = expandSubjectName(editModal.name.trim().replace(/\.{2,}/g,'').trim());
     await col.doc(editModal.id).update({
-      name:editModal.name.trim(), conducted:+editModal.conducted, attended:+editModal.attended
+      name: expandedName, conducted:+editModal.conducted, attended:+editModal.attended
     });
     setEdit(null); toast('Updated! ✅','success');
+  }
+
+  // Fix all existing Firestore subjects that have truncated names
+  async function fixTruncatedNames() {
+    if (!col) return;
+    let fixed = 0;
+    const snap = await col.get();
+    const batch = db.batch();
+    snap.docs.forEach(doc => {
+      const raw = (doc.data().name || '').trim();
+      const expanded = expandSubjectName(raw.replace(/\.{2,}/g,'').trim());
+      if (expanded !== raw) {
+        batch.update(col.doc(doc.id), { name: expanded });
+        fixed++;
+      }
+    });
+    if (fixed > 0) {
+      await batch.commit();
+      toast(`Fixed ${fixed} subject name${fixed>1?'s':''}! ✅`, 'success');
+    } else {
+      toast('All subject names are already correct ✅', 'info');
+    }
   }
 
   async function handleDelete(id) {
