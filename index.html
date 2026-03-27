@@ -1457,7 +1457,19 @@ function cleanName(s) {
     .trim()
     .slice(0, 60);
 }
+function normalizeSubjectName(name) {
+  const lower = name.toLowerCase();
 
+  if (lower.includes('design and analysis of al') && lower.includes('lab')) {
+    return 'Design and Analysis of Algorithm Practical';
+  }
+
+  if (lower.includes('design and analysis of al')) {
+    return 'Design and Analysis of Algorithm Theory';
+  }
+
+  return name;
+}
 // ── IMPORT SECTION COMPONENT ────────────────────────────
 function ImportSection({ col, onImported }) {
   const [open,     setOpen]     = useState(false);
@@ -1729,7 +1741,10 @@ function parseCyberVidyaAPIData(apiData) {
       : apiData.attendance ? apiData.attendance
       : apiData.result     ? apiData.result : [];
     for (const item of arr) {
-      const name     = (item.courseName||item.course_name||item.subject||item.subjectName||item.name||'').trim();
+      let rawName = (item.courseName||item.course_name||item.subject||item.subjectName||item.name||'').trim();
+
+let cleaned = cleanName(rawName);
+let name = normalizeSubjectName(cleaned);
       const presents = parseInt(item.presents||item.attended||item.present||0);
       const special  = parseInt(item.specialAttendance||item.special||0);
       const lectures = parseInt(item.lectures||item.totalLectures||item.conducted||0);
