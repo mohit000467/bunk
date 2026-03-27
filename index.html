@@ -350,22 +350,18 @@ input[type=number]{-moz-appearance:textfield}
 .threshold-slider::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(124,106,247,.5);border:2px solid var(--accent);transition:transform .15s}
 .threshold-slider::-webkit-slider-thumb:hover{transform:scale(1.25)}
 .threshold-slider::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:#fff;cursor:pointer;border:2px solid var(--accent);box-shadow:0 2px 8px rgba(124,106,247,.5)}
-/* Chart — single px coordinate system so bars & threshold are always in sync */
-.bar-chart-area{position:relative;margin-top:8px}
-.bar-chart-inner{display:flex;align-items:stretch}
-.bar-y-axis-col{width:40px;flex-shrink:0;position:relative}
-.bar-plot{flex:1;position:relative}
-/* grid-lines & threshold: cover only the BAR zone (not name-label zone) */
-.bar-chart-grid-lines{position:absolute;left:0;right:0;bottom:32px;top:0;pointer-events:none;z-index:0}
-.bar-grid-line{position:absolute;left:0;right:0;height:1px;background:rgba(255,255,255,.07)}
-.bar-threshold-line{position:absolute;left:0;right:0;height:0;border-top:2px dashed rgba(251,191,36,.8);z-index:3;transition:bottom .3s ease}
-.bar-threshold-tag{position:absolute;right:0;top:-17px;font-size:9px;font-weight:800;color:var(--yellow);background:rgba(251,191,36,.16);border:1px solid rgba(251,191,36,.32);padding:1px 7px;border-radius:4px;white-space:nowrap}
-/* bars fill same zone as grid (from bottom=32px to top=0) */
-.bar-chart-bars{position:absolute;left:0;right:0;bottom:32px;top:0;display:flex;align-items:flex-end;gap:5px;z-index:1}
-.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;height:100%;position:relative;cursor:pointer}
-.bar-rect{width:72%;max-width:46px;min-height:3px;border-radius:5px 5px 0 0;transform-origin:bottom;animation:barGrow .6s cubic-bezier(0.34,1.56,0.64,1) both;transition:width .2s,filter .15s;position:relative;overflow:hidden}
-.bar-rect::after{content:'';position:absolute;top:0;left:0;right:0;height:36%;background:linear-gradient(to bottom,rgba(255,255,255,.22),transparent);border-radius:5px 5px 0 0}
-.bar-col:hover .bar-rect{width:88%;filter:brightness(1.22)}
+.bar-chart-area{position:relative}
+.bar-chart-inner{position:relative}
+.bar-chart-grid-lines{position:absolute;left:40px;right:0;top:0;bottom:32px;pointer-events:none;z-index:0}
+.bar-grid-line{position:absolute;left:0;right:0;height:1px;background:var(--border)}
+.bar-threshold-line{position:absolute;left:0;right:0;height:0;border-top:2px dashed rgba(251,191,36,.75);z-index:2}
+.bar-threshold-tag{position:absolute;right:4px;top:-16px;font-size:9px;font-weight:800;color:var(--yellow);background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);padding:1px 7px;border-radius:4px;white-space:nowrap}
+.bar-chart-bars{display:flex;align-items:flex-end;gap:5px;height:200px;position:relative;z-index:1;padding-bottom:0;margin-left:40px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;height:100%;position:relative;cursor:pointer}
+.bar-rect-outer{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.bar-rect{width:72%;max-width:46px;min-height:4px;border-radius:6px 6px 0 0;transform-origin:bottom;animation:barGrow .65s cubic-bezier(0.34,1.56,0.64,1) both;transition:width .2s,filter .15s;position:relative;overflow:hidden}
+.bar-rect::after{content:'';position:absolute;top:0;left:0;right:0;height:38%;background:linear-gradient(to bottom,rgba(255,255,255,.2),transparent);border-radius:6px 6px 0 0}
+.bar-col:hover .bar-rect{width:88%;filter:brightness(1.2)}
 .bar-pct-label{font-size:10px;font-weight:700;margin-bottom:4px;text-align:center;line-height:1}
 .bar-name-label{font-size:9px;color:var(--text3);text-align:center;overflow:hidden;width:100%;padding:4px 2px 0;height:28px;display:flex;align-items:flex-start;justify-content:center;line-height:1.3;word-break:break-word}
 .bar-y-axis{position:absolute;left:0;top:0;bottom:32px;width:36px;display:flex;flex-direction:column;justify-content:space-between}
@@ -948,26 +944,8 @@ function Subjects({user}) {
     if(!col){ setSyncing(false); return; }
     setSyncing(true);
     const unsub = col.orderBy('createdAt','asc').onSnapshot(
-      snap => {
-        const loaded = snap.docs.map(d=>({id:d.id,...d.data()}));
-        setSubjects(loaded);
-        setSyncing(false);
-        // Auto-fix any truncated names in Firestore silently
-        const toFix = snap.docs.filter(d => {
-          const raw = (d.data().name||'').trim();
-          const expanded = expandSubjectName(raw.replace(/\.{2,}/g,'').trim());
-          return expanded !== raw;
-        });
-        if (toFix.length > 0) {
-          const batch = db.batch();
-          toFix.forEach(d => {
-            const expanded = expandSubjectName((d.data().name||'').replace(/\.{2,}/g,'').trim());
-            batch.update(col.doc(d.id), { name: expanded });
-          });
-          batch.commit().catch(()=>{});
-        }
-      },
-      err => { console.error(err); setSyncing(false); toast('Sync error!','error'); }
+      snap => { setSubjects(snap.docs.map(d=>({id:d.id,...d.data()}))); setSyncing(false); },
+      err  => { console.error(err); setSyncing(false); toast('Sync error!','error'); }
     );
     return ()=>unsub();
   }, [user && user.uid]);
@@ -984,46 +962,21 @@ function Subjects({user}) {
   async function handleAdd() {
     const e=vf(form); setFErr(e);
     if(Object.keys(e).length) return;
-    const expandedName = expandSubjectName(form.name.trim().replace(/\.{2,}/g,'').trim());
     await col.add({
-      name: expandedName, conducted:+form.conducted, attended:+form.attended,
+      name:form.name.trim(), conducted:+form.conducted, attended:+form.attended,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    toast(`${expandedName} added! 🎓`,'success');
+    toast(`${form.name} added! 🎓`,'success');
     setForm({name:'',conducted:'',attended:''}); setShowAdd(false);
   }
 
   async function handleEditSave() {
     const e=vf(editModal); setFErr(e);
     if(Object.keys(e).length) return;
-    // Expand known truncated names before saving
-    const expandedName = expandSubjectName(editModal.name.trim().replace(/\.{2,}/g,'').trim());
     await col.doc(editModal.id).update({
-      name: expandedName, conducted:+editModal.conducted, attended:+editModal.attended
+      name:editModal.name.trim(), conducted:+editModal.conducted, attended:+editModal.attended
     });
     setEdit(null); toast('Updated! ✅','success');
-  }
-
-  // Fix all existing Firestore subjects that have truncated names
-  async function fixTruncatedNames() {
-    if (!col) return;
-    let fixed = 0;
-    const snap = await col.get();
-    const batch = db.batch();
-    snap.docs.forEach(doc => {
-      const raw = (doc.data().name || '').trim();
-      const expanded = expandSubjectName(raw.replace(/\.{2,}/g,'').trim());
-      if (expanded !== raw) {
-        batch.update(col.doc(doc.id), { name: expanded });
-        fixed++;
-      }
-    });
-    if (fixed > 0) {
-      await batch.commit();
-      toast(`Fixed ${fixed} subject name${fixed>1?'s':''}! ✅`, 'success');
-    } else {
-      toast('All subject names are already correct ✅', 'info');
-    }
   }
 
   async function handleDelete(id) {
@@ -1140,81 +1093,67 @@ function Subjects({user}) {
               <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'var(--red)'}}/> Danger</div>
               <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'rgba(251,191,36,.7)',border:'1px dashed var(--yellow)'}}/> Target line</div>
             </div>
-            {/* Bar chart — px-accurate coordinate system */}
-            {(()=>{
-              // ZONE_H = height of the bar+grid zone (NOT counting name labels)
-              // Both grid lines and bars use: bottom = (val/100) * ZONE_H px
-              const ZONE_H = 200; // px — same for bars AND threshold/grid lines
-              return (
-              <div className="bar-chart-area">
-                <div className="bar-chart-inner">
-                  {/* Y-axis */}
-                  <div className="bar-y-axis-col" style={{height: ZONE_H + 32}}>
-                    {[100,75,50,25,0].map((v,idx) => (
-                      <div key={v} className="bar-y-label"
-                        style={{position:'absolute', bottom: 32 + (v/100)*ZONE_H - 7, left:0, right:4, textAlign:'right', fontSize:'9px', color:'var(--text3)'}}>
-                        {v}%
-                      </div>
-                    ))}
-                  </div>
-                  {/* Plot area */}
-                  <div className="bar-plot" style={{height: ZONE_H + 32}}>
-                    {/* Grid + threshold — positioned from bottom of ZONE_H */}
-                    <div className="bar-chart-grid-lines">
-                      {[0,25,50,75,100].map(v => (
-                        <div key={v} className="bar-grid-line"
-                          style={{bottom: `${(v/100)*ZONE_H}px`}}/>
-                      ))}
-                      <div className="bar-threshold-line"
-                        style={{bottom: `${(threshold/100)*ZONE_H}px`}}>
-                        <span className="bar-threshold-tag">{threshold}% target</span>
-                      </div>
-                    </div>
-                    {/* Bars — height = (p/100)*ZONE_H px, exactly matches grid */}
-                    <div className="bar-chart-bars">
-                      {subjects.map((s, i) => {
-                        const p   = calcAtt(s.conducted, s.attended);
-                        const st  = getStatus(p, threshold);
-                        const col = sColor(st);
-                        const barPx  = Math.max((p / 100) * ZONE_H, 3);
-                        const delay  = `${i * 0.06}s`;
-                        return (
-                          <div key={s.id} className="bar-col">
-                            {/* Tooltip */}
-                            <div className="bar-tooltip-box">
-                              <div style={{fontFamily:'Syne,sans-serif',fontWeight:800,fontSize:'13px',marginBottom:'4px',color:'var(--text)'}}>{s.name}</div>
-                              <div style={{color:col,fontWeight:700,fontSize:'16px',fontFamily:'Syne,sans-serif'}}>{p.toFixed(1)}%</div>
-                              <div style={{color:'var(--text2)',fontSize:'10px',marginTop:'2px'}}>{s.attended}/{s.conducted} classes</div>
-                              <div style={{color:'var(--text3)',fontSize:'10px',marginTop:'2px'}}>
-                                {p >= threshold
-                                  ? `✅ Can bunk ${canBunk(s.conducted,s.attended,threshold)} more`
-                                  : `📚 Need ${needAtt(s.conducted,s.attended,threshold)} more`}
-                              </div>
-                            </div>
-                            {/* Pct label above bar */}
-                            <div style={{position:'absolute',bottom: barPx + 3, left:'50%', transform:'translateX(-50%)', fontSize:'9px', fontWeight:700, color:col, whiteSpace:'nowrap', pointerEvents:'none'}}>
-                              {p.toFixed(0)}%
-                            </div>
-                            {/* Bar */}
-                            <div className="bar-rect"
-                              style={{
-                                height: `${barPx}px`,
-                                background: `linear-gradient(to top, ${col}88, ${col})`,
-                                animationDelay: delay
-                              }}/>
-                            {/* Name label */}
-                            <div className="bar-name-label" style={{position:'absolute', bottom:-28, fontSize:'9px', color:'var(--text3)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:'100%', textAlign:'center', padding:'0 2px'}}>
-                              {s.name.replace(' (Lab)',' Lab').slice(0,14)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+            {/* Bar chart */}
+            <div className="bar-chart-area">
+              {/* Y-axis labels */}
+              <div className="bar-y-axis">
+                {[100,75,50,25,0].map(v => (
+                  <div key={v} className="bar-y-label">{v}%</div>
+                ))}
+              </div>
+              <div className="bar-chart-inner">
+                {/* Grid lines + threshold line */}
+                <div className="bar-chart-grid-lines">
+                  {[0,25,50,75,100].map(v => (
+                    <div key={v} className="bar-grid-line" style={{bottom:`${v}%`}}/>
+                  ))}
+                  {/* Threshold dashed line */}
+                  <div className="bar-threshold-line" style={{bottom:`${threshold}%`}}>
+                    <span className="bar-threshold-tag">{threshold}% target</span>
                   </div>
                 </div>
+                {/* Bars */}
+                <div className="bar-chart-bars">
+                  {subjects.map((s, i) => {
+                    const p = calcAtt(s.conducted, s.attended);
+                    const st = getStatus(p, threshold);
+                    const col = sColor(st);
+                    const barH = `${Math.max(p, 2)}%`;
+                    const delay = `${i * 0.06}s`;
+                    return (
+                      <div key={s.id} className="bar-col" style={{animationDelay: delay}}>
+                        {/* Tooltip */}
+                        <div className="bar-tooltip-box">
+                          <div style={{fontFamily:'Syne,sans-serif',fontWeight:800,fontSize:'13px',marginBottom:'4px',color:'var(--text)'}}>{s.name}</div>
+                          <div style={{color:col,fontWeight:700,fontSize:'16px',fontFamily:'Syne,sans-serif'}}>{p.toFixed(1)}%</div>
+                          <div style={{color:'var(--text2)',fontSize:'10px',marginTop:'2px'}}>{s.attended}/{s.conducted} classes</div>
+                          <div style={{color:'var(--text3)',fontSize:'10px',marginTop:'2px'}}>
+                            {p >= threshold
+                              ? `✅ Can bunk ${canBunk(s.conducted, s.attended, threshold)} more`
+                              : `📚 Need ${needAtt(s.conducted, s.attended, threshold)} more`}
+                          </div>
+                        </div>
+                        {/* Percentage label */}
+                        <div className="bar-pct-label" style={{color:col}}>{p.toFixed(0)}%</div>
+                        {/* Bar */}
+                        <div className="bar-rect-outer">
+                          <div
+                            className="bar-rect"
+                            style={{
+                              height: barH,
+                              background: `linear-gradient(to top, ${col}99, ${col})`,
+                              animationDelay: delay
+                            }}
+                          />
+                        </div>
+                        {/* Name */}
+                        <div className="bar-name-label">{s.name.replace(' (Lab)', ' Lab').slice(0, 22)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              );
-            })()}
+            </div>
             <div style={{textAlign:'center',marginTop:'12px',fontSize:'11px',color:'var(--text3)'}}>
               Hover bars for details · Drag slider to change threshold
             </div>
@@ -1385,6 +1324,7 @@ function parseCyberVidyaData(raw) {
     );
 
     if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
+    else if (component === 'THEORY') name = name + ' Theory';
     return name;
   }
 
@@ -1438,6 +1378,7 @@ function parseCyberVidyaData(raw) {
 
       let name = cleanName(namePart);
       if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
+      else if (component === 'THEORY') name = name + ' Theory';
 
       results.push({ name, attended, conducted: nums.lectures });
     }
@@ -1452,6 +1393,7 @@ function parseCyberVidyaData(raw) {
       const component = m[2].toUpperCase();
       let name = cleanName(cleanDots(m[1]));
       if (component === 'PRACTICAL' || component === 'LAB') name = name + ' (Lab)';
+      else if (component === 'THEORY') name = name + ' Theory';
 
       const p = parseInt(m[3]), s = parseInt(m[4]), l = parseInt(m[5]);
       if (!name || l <= 0) continue;
@@ -1508,42 +1450,28 @@ function parseKIETNumbers(dataLine) {
   candidates.sort((a, b) => a.score - b.score);
   return candidates[0];
 }
-// Known KIET subject name expansions
-// CyberVidya truncates long names in the DOM — we expand them here
-const SUBJECT_EXPANSIONS = [
-  // Pattern (lowercase prefix) → full name
-  ['design and analysis of al', 'Design and Analysis of Algorithms'],
-  ['design & analysis of al',   'Design and Analysis of Algorithms'],
-  ['ann and machine learn',     'ANN and Machine Learning'],
-  ['aws foundations',           'AWS Foundations & Data Engineering'],
-  ['computer networks l',       'Computer Networks'],   // Lab handled by (Lab) suffix
-  ['soft skills essential',     'Soft Skills Essential'],
-  ['universal human val',       'Universal Human Values'],
-  ['web technolog',             'Web Technology'],
-  ['data analytic',             'Data Analytics'],
-  ['computer network',          'Computer Networks'],
-  ['aptitude',                  'Aptitude'],
-];
-
-function expandSubjectName(raw) {
-  const lower = raw.toLowerCase().trim();
-  for (const [prefix, full] of SUBJECT_EXPANSIONS) {
-    if (lower.startsWith(prefix)) return full;
-  }
-  return raw; // no match — return as-is
+// Expand truncated KIET names → full official name
+// Called AFTER dots are stripped, BEFORE Lab/Theory suffix is added
+function expandKietName(n) {
+  const l = (n || '').toLowerCase().trim();
+  // "Design and Analysis of Al..." → full name (covers any truncation)
+  if (l.startsWith('design and analysis of al')) return 'Design and Analysis of Algorithms';
+  if (l.startsWith('ann and machine'))           return 'ANN and Machine Learning';
+  if (l.startsWith('aws foun'))                  return 'AWS Foundations & Data Analytics';
+  if (l.startsWith('soft skills essential'))     return 'Soft Skills Essential-2';
+  if (l.startsWith('universal human'))           return 'Universal Human Values';
+  return n;
 }
-
 function cleanName(s) {
   const cleaned = (s || '')
-    .replace(/\.\.\./g, '')      // remove ellipsis
+    .replace(/\.{2,}/g, '')
     .replace(/\s+/g, ' ')
     .replace(/[^\w\s\-&()\/]/g, '')
     .trim()
-    .replace(/^[\d\s\.\-]+/, '') // strip leading numbers
+    .replace(/^[\d\s\.\-]+/, '')
     .trim()
-    .slice(0, 80);                 // allow longer before expansion
-  // Try to expand known truncated names
-  return expandSubjectName(cleaned).slice(0, 80);
+    .slice(0, 80);
+  return expandKietName(cleaned);
 }
 
 // ── IMPORT SECTION COMPONENT ────────────────────────────
@@ -1817,12 +1745,19 @@ function parseCyberVidyaAPIData(apiData) {
       : apiData.attendance ? apiData.attendance
       : apiData.result     ? apiData.result : [];
     for (const item of arr) {
-      const name     = (item.courseName||item.course_name||item.subject||item.subjectName||item.name||'').trim();
+      const rawName  = (item.courseName||item.course_name||item.subject||item.subjectName||item.name||'').trim();
+      const comp     = (item.component||item.courseComponent||item.course_component||'').toUpperCase().trim();
+      const baseName = expandKietName(rawName.replace(/\.{2,}/g,'').trim());
+      const name     = comp === 'PRACTICAL' || comp === 'LAB'
+                         ? baseName + ' (Lab)'
+                         : comp === 'THEORY'
+                           ? baseName + ' Theory'
+                           : baseName;
       const presents = parseInt(item.presents||item.attended||item.present||0);
       const special  = parseInt(item.specialAttendance||item.special||0);
       const lectures = parseInt(item.lectures||item.totalLectures||item.conducted||0);
       if (name && lectures > 0)
-        results.push({ name: name.slice(0,60), attended: Math.min(presents+special,lectures), conducted: lectures });
+        results.push({ name: name.slice(0,80), attended: Math.min(presents+special,lectures), conducted: lectures });
     }
   } catch(e) { console.warn('[BunkPlanner] API parse error:', e); }
   return results;
@@ -2473,16 +2408,11 @@ function App() {
     // Normalize subjects array from any source
     function extractSubjects(arr) {
       if (!Array.isArray(arr) || arr.length === 0) return [];
-      return arr.map(s => {
-        // Expand known truncated names from CyberVidya
-        const rawName = (s.name || '').trim();
-        const expanded = expandSubjectName(rawName.replace(/\.{2,}/g, '').trim());
-        return {
-          name:      expanded.slice(0, 80),
-          attended:  parseInt(s.attended)  || 0,
-          conducted: parseInt(s.conducted) || 0,
-        };
-      }).filter(s => s.name && s.conducted > 0);
+      return arr.map(s => ({
+        name:      (s.name || '').trim().slice(0, 80),
+        attended:  parseInt(s.attended)  || 0,
+        conducted: parseInt(s.conducted) || 0,
+      })).filter(s => s.name && s.conducted > 0);
     }
 
     const t = (detail.type || '').toLowerCase();
