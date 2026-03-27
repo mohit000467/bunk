@@ -350,35 +350,27 @@ input[type=number]{-moz-appearance:textfield}
 .threshold-slider::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(124,106,247,.5);border:2px solid var(--accent);transition:transform .15s}
 .threshold-slider::-webkit-slider-thumb:hover{transform:scale(1.25)}
 .threshold-slider::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:#fff;cursor:pointer;border:2px solid var(--accent);box-shadow:0 2px 8px rgba(124,106,247,.5)}
-/* ── Bar chart — single coordinate system so bars & threshold line always align ── */
-.bar-chart-area{position:relative;margin-top:8px}
-/* Inner wrapper holds y-axis + the actual chart side by side */
-.bar-chart-inner{display:flex;gap:0;align-items:stretch}
-/* Y-axis column */
-.bar-y-axis-col{width:36px;flex-shrink:0;position:relative}
-/* The plot area — everything is positioned relative to this */
-.bar-plot{flex:1;position:relative;height:220px}
-/* Grid lines — covers full plot area */
-.bar-chart-grid-lines{position:absolute;inset:0;bottom:32px;pointer-events:none;z-index:0}
-.bar-grid-line{position:absolute;left:0;right:0;height:1px;background:rgba(255,255,255,.07)}
-/* Threshold line — same coordinate system as grid */
-.bar-threshold-line{position:absolute;left:0;right:0;height:0;border-top:2px dashed rgba(251,191,36,.8);z-index:3;transition:bottom .3s ease}
-.bar-threshold-tag{position:absolute;right:0;top:-17px;font-size:9px;font-weight:800;color:var(--yellow);background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.35);padding:1px 7px;border-radius:4px;white-space:nowrap}
-/* Bars row — sits in same plot area */
-.bar-chart-bars{position:absolute;inset:0;bottom:32px;display:flex;align-items:flex-end;gap:5px;z-index:1}
-.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;height:100%;position:relative;cursor:pointer}
-/* bar-rect height = % of bar-chart-bars container (= plot minus label area) */
-.bar-rect{width:72%;max-width:46px;min-height:3px;border-radius:5px 5px 0 0;transform-origin:bottom;animation:barGrow .6s cubic-bezier(0.34,1.56,0.64,1) both;transition:width .2s,filter .15s;position:relative;overflow:hidden}
-.bar-rect::after{content:'';position:absolute;top:0;left:0;right:0;height:36%;background:linear-gradient(to bottom,rgba(255,255,255,.22),transparent);border-radius:5px 5px 0 0}
-.bar-col:hover .bar-rect{width:88%;filter:brightness(1.22)}
-/* Name labels row — below the plot */
-.bar-names-row{position:absolute;bottom:0;left:0;right:0;height:32px;display:flex;gap:5px;align-items:flex-start;padding-top:4px;z-index:1}
-.bar-pct-label{font-size:10px;font-weight:700;margin-bottom:4px;text-align:center;line-height:1}
-.bar-name-label{font-size:9px;color:var(--text3);text-align:center;overflow:hidden;width:100%;padding:4px 2px 0;height:28px;display:flex;align-items:flex-start;justify-content:center;line-height:1.3;word-break:break-word}
-.bar-y-axis{position:absolute;left:0;top:0;bottom:32px;width:36px;display:flex;flex-direction:column;justify-content:space-between}
+.bar-chart-area{position:relative;padding-left:40px}
+.bar-y-axis{position:absolute;left:0;top:0;height:200px;width:38px;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
 .bar-y-label{font-size:9px;color:var(--text3);font-weight:600;text-align:right;padding-right:5px;line-height:1}
-.bar-tooltip-box{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:9px 12px;font-size:11px;white-space:nowrap;z-index:20;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:120px}
+/* Single unified canvas: grid + threshold + bars all in exactly 200px */
+.bar-canvas{position:relative;height:200px;width:100%}
+.bar-grid-line{position:absolute;left:0;right:0;height:1px;background:var(--border);pointer-events:none;z-index:0}
+.bar-threshold-line{position:absolute;left:0;right:0;height:0;border-top:2px dashed rgba(251,191,36,.8);pointer-events:none;z-index:2;transition:bottom .35s ease}
+.bar-threshold-tag{position:absolute;right:4px;top:-16px;font-size:9px;font-weight:800;color:var(--yellow);background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);padding:1px 7px;border-radius:4px;white-space:nowrap}
+/* Bars row sits at the bottom of the canvas */
+.bar-chart-bars{position:absolute;left:0;right:0;bottom:0;top:0;display:flex;align-items:flex-end;gap:5px;z-index:1}
+.bar-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;position:relative;cursor:pointer}
+.bar-rect{width:76%;max-width:50px;min-height:4px;border-radius:6px 6px 0 0;transform-origin:bottom;animation:barGrow .65s cubic-bezier(0.34,1.56,0.64,1) both;transition:width .2s,filter .15s,height .4s ease;position:relative;overflow:hidden}
+.bar-rect::after{content:'';position:absolute;top:0;left:0;right:0;height:38%;background:linear-gradient(to bottom,rgba(255,255,255,.2),transparent);border-radius:6px 6px 0 0}
+.bar-col:hover .bar-rect{width:90%;filter:brightness(1.2)}
+.bar-pct-label{font-size:10px;font-weight:700;margin-bottom:4px;text-align:center;line-height:1;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:6px;white-space:nowrap}
+.bar-name-label{font-size:9px;color:var(--text3);text-align:center;overflow:hidden;width:100%;padding:4px 2px 0;height:28px;display:flex;align-items:flex-start;justify-content:center;line-height:1.3;word-break:break-word}
+.bar-tooltip-box{position:absolute;bottom:calc(100% + 24px);left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:9px 12px;font-size:11px;white-space:nowrap;z-index:20;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:130px}
 .bar-col:hover .bar-tooltip-box{opacity:1}
+/* Name labels row below chart */
+.bar-names-row{display:flex;gap:5px;margin-top:4px;padding:0}
+.bar-name-cell{flex:1;min-width:0;font-size:9px;color:var(--text3);text-align:center;line-height:1.3;word-break:break-word;padding:0 2px;height:28px;display:flex;align-items:flex-start;justify-content:center}
 
 
 /* ══════════════════════════════════════════════
@@ -1104,78 +1096,83 @@ function Subjects({user}) {
               <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'var(--red)'}}/> Danger</div>
               <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'rgba(251,191,36,.7)',border:'1px dashed var(--yellow)'}}/> Target line</div>
             </div>
-            {/* Bar chart — single coordinate system */}
-            {(()=>{
-              // CHART_H = height of the plotting area (excluding name labels)
-              const CHART_H = 188; // px — bars AND threshold line both use this
-              const LABEL_H = 32;  // px — name labels below
-              const TOTAL_H = CHART_H + LABEL_H;
+            {/* Bar chart — unified 200px canvas so bars + threshold + grid are always in sync */}
+            {(() => {
+              const H = 200; // single source of truth for chart height
               return (
               <div className="bar-chart-area">
-                <div className="bar-chart-inner">
-                  {/* Y-axis */}
-                  <div className="bar-y-axis-col">
-                    <div style={{position:'absolute',top:0,bottom:LABEL_H,left:0,right:0,display:'flex',flexDirection:'column',justifyContent:'space-between',paddingBottom:0}}>
-                      {[100,75,50,25,0].map(v=>(
-                        <div key={v} className="bar-y-label">{v}%</div>
-                      ))}
-                    </div>
+                {/* Y-axis */}
+                <div className="bar-y-axis">
+                  {[100,75,50,25,0].map(v => (
+                    <div key={v} className="bar-y-label">{v}%</div>
+                  ))}
+                </div>
+
+                {/* Canvas: grid lines + threshold line + bars — ALL in H px */}
+                <div className="bar-canvas">
+                  {/* Grid lines — px from bottom so they match bars exactly */}
+                  {[0,25,50,75,100].map(v => (
+                    <div key={v} className="bar-grid-line"
+                      style={{bottom: `${Math.round((v/100)*H)}px`}}/>
+                  ))}
+                  {/* Threshold line — px from bottom, transitions smoothly */}
+                  <div className="bar-threshold-line"
+                    style={{bottom: `${Math.round((threshold/100)*H)}px`}}>
+                    <span className="bar-threshold-tag">{threshold}% target</span>
                   </div>
-                  {/* Plot area — both grid/threshold lines AND bars use same px height */}
-                  <div className="bar-plot" style={{height: TOTAL_H}}>
-                    {/* Grid lines — inside CHART_H zone only */}
-                    <div className="bar-chart-grid-lines">
-                      {[0,25,50,75,100].map(v=>(
-                        <div key={v} className="bar-grid-line"
-                          style={{bottom: `${(v / 100) * CHART_H}px`}}/>
-                      ))}
-                      {/* Threshold dashed line — SAME px math as bars */}
-                      <div className="bar-threshold-line"
-                        style={{bottom: `${(threshold / 100) * CHART_H}px`, transition:'bottom .3s ease'}}>
-                        <span className="bar-threshold-tag">{threshold}% target</span>
-                      </div>
-                    </div>
-                    {/* Bars — height = (p/100)*CHART_H px, absolutely correct */}
-                    <div className="bar-chart-bars">
-                      {subjects.map((s, i) => {
-                        const p   = calcAtt(s.conducted, s.attended);
-                        const st  = getStatus(p, threshold);
-                        const col = sColor(st);
-                        const barHpx = Math.max((p / 100) * CHART_H, 3);
-                        const delay  = `${i * 0.06}s`;
-                        return (
-                          <div key={s.id} className="bar-col" style={{animationDelay: delay}}>
-                            {/* Tooltip */}
-                            <div className="bar-tooltip-box">
-                              <div style={{fontFamily:'Syne,sans-serif',fontWeight:800,fontSize:'13px',marginBottom:'4px',color:'var(--text)'}}>{s.name}</div>
-                              <div style={{color:col,fontWeight:700,fontSize:'16px',fontFamily:'Syne,sans-serif'}}>{p.toFixed(1)}%</div>
-                              <div style={{color:'var(--text2)',fontSize:'10px',marginTop:'2px'}}>{s.attended}/{s.conducted} classes</div>
-                              <div style={{color:'var(--text3)',fontSize:'10px',marginTop:'2px'}}>
-                                {p >= threshold
-                                  ? `✅ Can bunk ${canBunk(s.conducted,s.attended,threshold)} more`
-                                  : `📚 Need ${needAtt(s.conducted,s.attended,threshold)} more`}
-                              </div>
-                            </div>
-                            {/* Pct label */}
-                            <div className="bar-pct-label" style={{color:col,position:'absolute',bottom:`${barHpx+4}px`,left:'50%',transform:'translateX(-50%)',fontSize:'10px',fontWeight:700,whiteSpace:'nowrap'}}>
-                              {p.toFixed(0)}%
-                            </div>
-                            {/* Bar — height in px, NOT % */}
-                            <div className="bar-rect"
-                              style={{
-                                height: `${barHpx}px`,
-                                background: `linear-gradient(to top, ${col}88, ${col})`,
-                                animationDelay: delay
-                              }}/>
-                            {/* Name label */}
-                            <div className="bar-name-label" style={{position:'absolute',bottom:`-${LABEL_H-4}px`,left:'50%',transform:'translateX(-50%)',fontSize:'9px',color:'var(--text3)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:'100%',textAlign:'center'}}>
-                              {s.name.replace(' (Lab)',' Lab').slice(0,14)}
+
+                  {/* Bars — height in px so they align perfectly with grid */}
+                  <div className="bar-chart-bars">
+                    {subjects.map((s, i) => {
+                      const p      = calcAtt(s.conducted, s.attended);
+                      const st     = getStatus(p, threshold);
+                      const col    = sColor(st);
+                      const barPx  = Math.max(Math.round((p / 100) * H), 4);
+                      const delay  = `${i * 0.06}s`;
+                      const bunk   = canBunk(s.conducted, s.attended, threshold);
+                      const need   = needAtt(s.conducted, s.attended, threshold);
+                      return (
+                        <div key={s.id || i} className="bar-col" style={{animationDelay: delay}}>
+                          {/* Tooltip */}
+                          <div className="bar-tooltip-box">
+                            <div style={{fontFamily:'Syne,sans-serif',fontWeight:800,fontSize:'13px',marginBottom:'4px',color:'var(--text)'}}>{s.name}</div>
+                            <div style={{color:col,fontWeight:700,fontSize:'15px',fontFamily:'Syne,sans-serif'}}>{p.toFixed(1)}%</div>
+                            <div style={{color:'var(--text2)',fontSize:'10px',marginTop:'2px'}}>{s.attended}/{s.conducted} classes</div>
+                            <div style={{fontSize:'10px',marginTop:'4px',fontWeight:600,
+                              color: p>=threshold?'var(--green)':'var(--red)'}}>
+                              {p >= threshold
+                                ? `✅ Can skip ${bunk} more`
+                                : `📚 Need ${need} more`}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                          {/* Pct label above bar */}
+                          <div className="bar-pct-label" style={{color:col}}>{p.toFixed(0)}%</div>
+                          {/* Bar — exact px height */}
+                          <div className="bar-rect"
+                            style={{
+                              height: `${barPx}px`,
+                              background: `linear-gradient(to top, ${col}88, ${col})`,
+                              animationDelay: delay
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
+                </div>
+
+                {/* Subject names below chart */}
+                <div className="bar-names-row">
+                  {subjects.map((s, i) => (
+                    <div key={i} className="bar-name-cell">
+                      {s.name.replace('Design and Analysis of Algorithms','DAA')
+                              .replace(' (Lab)',' Lab')
+                              .replace('AWS Foundations & Data Analytics','AWS Fdn')
+                              .replace('Universal Human Values','UHV')
+                              .replace('ANN and Machine Learning','ANN & ML')
+                              .slice(0, 18)}
+                    </div>
+                  ))}
                 </div>
               </div>
               );
@@ -1473,15 +1470,35 @@ function parseKIETNumbers(dataLine) {
   candidates.sort((a, b) => a.score - b.score);
   return candidates[0];
 }
+// Expand truncated KIET subject names to their full form
+const KIET_NAMES = {
+  'design and analysis of al':  'Design and Analysis of Algorithms',
+  'design and analysis of algo':'Design and Analysis of Algorithms',
+  'ann and machine':            'ANN and Machine Learning',
+  'aws foun':                   'AWS Foundations & Data Analytics',
+  'soft skills essential':      'Soft Skills Essential-2',
+  'universal human':            'Universal Human Values',
+  'web tech':                   'Web Technology',
+  'data anal':                  'Data Analytics',
+  'computer networks l':        'Computer Networks Lab',
+};
+function expandKietName(raw) {
+  const lower = (raw || '').toLowerCase().trim();
+  for (const [prefix, full] of Object.entries(KIET_NAMES)) {
+    if (lower.startsWith(prefix)) return full;
+  }
+  return raw;
+}
 function cleanName(s) {
-  return (s || '')
-    .replace(/\.\.\./g, '')
+  const cleaned = (s || '')
+    .replace(/\.{2,}/g, '')
     .replace(/\s+/g, ' ')
     .replace(/[^\w\s\-&()\/]/g, '')
     .trim()
-    .replace(/^[\d\s\.\-]+/, '')   // strip leading numbers
+    .replace(/^[\d\s\.\-]+/, '')
     .trim()
-    .slice(0, 60);
+    .slice(0, 80);
+  return expandKietName(cleaned);
 }
 
 // ── IMPORT SECTION COMPONENT ────────────────────────────
@@ -1759,8 +1776,9 @@ function parseCyberVidyaAPIData(apiData) {
       const presents = parseInt(item.presents||item.attended||item.present||0);
       const special  = parseInt(item.specialAttendance||item.special||0);
       const lectures = parseInt(item.lectures||item.totalLectures||item.conducted||0);
-      if (name && lectures > 0)
-        results.push({ name: name.slice(0,60), attended: Math.min(presents+special,lectures), conducted: lectures });
+      const fullName = expandKietName(name.replace(/\.{2,}/g,'').trim());
+      if (fullName && lectures > 0)
+        results.push({ name: fullName.slice(0,80), attended: Math.min(presents+special,lectures), conducted: lectures });
     }
   } catch(e) { console.warn('[BunkPlanner] API parse error:', e); }
   return results;
@@ -1981,166 +1999,285 @@ function SyncBanner({ subjects, user, onDone, onCancel }) {
 
 
 // ══════════════════════════════════════════════════════════════
-//  AutoFetchBanner — One-click CyberVidya fetch card v11
+//  AutoFetchBanner — Popup-based scraper, no extension needed
+//  Works on mobile + laptop. Expands truncated KIET names.
 // ══════════════════════════════════════════════════════════════
+
+const SCRAPER_SCRIPT = `
+(function() {
+  'use strict';
+  var PAR = window.opener;
+  if (!PAR) return;
+  function post(t, p) { try { PAR.postMessage({ _bpp:true, type:t, payload:p }, '*'); } catch(e){} }
+  function sleep(ms) { return new Promise(function(r){ setTimeout(r,ms); }); }
+
+  // Expand truncated KIET names — permanent fix for "Design and Analysis of Al..."
+  function expand(n) {
+    var l = (n||'').toLowerCase().trim();
+    if (l.indexOf('design and analysis of al') === 0) return 'Design and Analysis of Algorithms';
+    if (l.indexOf('ann and machine') === 0)           return 'ANN and Machine Learning';
+    if (l.indexOf('aws foun') === 0)                  return 'AWS Foundations & Data Analytics';
+    if (l.indexOf('soft skills essential') === 0)     return 'Soft Skills Essential-2';
+    if (l.indexOf('universal human') === 0)           return 'Universal Human Values';
+    if (l.indexOf('web tech') === 0)                  return 'Web Technology';
+    if (l.indexOf('data anal') === 0)                 return 'Data Analytics';
+    if (l.indexOf('computer networks l') === 0)       return 'Computer Networks Lab';
+    return n;
+  }
+
+  function parseTable() {
+    var results = [], seen = {};
+    var tables = document.querySelectorAll('table');
+    for (var ti=0; ti<tables.length; ti++) {
+      var rows = Array.from(tables[ti].querySelectorAll('tr'));
+      if (rows.length < 3) continue;
+      var hdr=null, hdrIdx=-1;
+      for (var i=0; i<Math.min(rows.length,5); i++) {
+        var cells = Array.from(rows[i].querySelectorAll('th,td')).map(function(c){ return c.innerText.trim().toLowerCase(); });
+        if (cells.some(function(c){ return c==='course'; }) &&
+           (cells.some(function(c){ return c==='presents'||c==='present'; }) ||
+            cells.some(function(c){ return c==='lectures'; }))) {
+          hdr=cells; hdrIdx=i; break;
+        }
+      }
+      if (!hdr||hdrIdx<0) continue;
+      var cCourse=-1,cComp=-1,cPresents=-1,cSpecial=-1,cLectures=-1;
+      hdr.forEach(function(h,i){
+        if(h==='course') cCourse=i;
+        else if(h==='course component'||h==='component') cComp=i;
+        else if(h==='presents'||h==='present') cPresents=i;
+        else if(h.indexOf('special')>=0) cSpecial=i;
+        else if(h==='lectures') cLectures=i;
+      });
+      if(cCourse<0||cLectures<0) continue;
+      for(var i=hdrIdx+1; i<rows.length; i++) {
+        var tds=Array.from(rows[i].querySelectorAll('td'));
+        if(tds.length<=Math.max(cCourse,cLectures)) continue;
+        var texts=tds.map(function(t){ return t.innerText.trim(); });
+        if(!/^\d+$/.test(texts[0])) continue;
+        var rawName=texts[cCourse]||'';
+        if(!rawName||rawName.length<3) continue;
+        if(/^(BLENDED|THEORY|PRACTICAL|LAB|TUTORIAL)$/i.test(rawName)) continue;
+        if(/^\d+$/.test(rawName)) continue;
+        // Clean and expand name
+        var name = expand(rawName.replace(/\.+$/, '').trim().slice(0,80));
+        if(name.length<2) continue;
+        var comp = (cComp>=0&&cComp<texts.length)?texts[cComp].toUpperCase():'';
+        var suffix = (comp==='PRACTICAL'||comp==='LAB')?' (Lab)':'';
+        var full = name + suffix;
+        var key = full.toLowerCase();
+        if(seen[key]) continue;
+        var P=cPresents>=0?(parseInt(texts[cPresents])||0):0;
+        var S=cSpecial>=0?(parseInt(texts[cSpecial])||0):0;
+        var L=parseInt(texts[cLectures])||0;
+        if(L<=0) continue;
+        seen[key]=true;
+        results.push({ name:full, attended:Math.min(P+S,L), conducted:L });
+      }
+      if(results.length>0) break;
+    }
+    return results;
+  }
+
+  async function run() {
+    post('status',{step:'checking'});
+    var found=false;
+    for(var i=0;i<30;i++){
+      var tables=document.querySelectorAll('table');
+      for(var j=0;j<tables.length;j++){
+        if(tables[j].querySelectorAll('tbody tr').length>0&&(tables[j].innerText||'').indexOf('%')>=0){found=true;break;}
+      }
+      if(found) break;
+      await sleep(500);
+    }
+    if(!found){
+      if(window.location.href.indexOf('my-attendance')<0){
+        post('status',{step:'navigating'});
+        window.location.href='https://kiet.cybervidya.net/attendance/my-attendance';
+        return;
+      }
+      post('error',{msg:'Table not found. Make sure you are logged in to CyberVidya.'});
+      return;
+    }
+    post('status',{step:'scraping'});
+    await sleep(300);
+    var subjects=parseTable();
+    if(subjects.length===0){
+      post('error',{msg:'Could not read attendance. Login to CyberVidya and retry.'});
+      return;
+    }
+    post('done',{subjects:subjects});
+  }
+
+  var lastUrl=location.href;
+  var obs=new MutationObserver(function(){
+    if(location.href!==lastUrl){lastUrl=location.href;setTimeout(run,1200);}
+  });
+  obs.observe(document.body||document.documentElement,{childList:true,subtree:true});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(run,800);});
+  else setTimeout(run,800);
+})();
+`;
+
 function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
-  // Own independent detection — checks BOTH marker IDs
-  const [extInstalled, setExtInstalled] = useState(() =>
-    !!(document.getElementById('bunkplanner-extension-installed') ||
-       document.getElementById('bpp-ext-marker'))
-  );
-  // phase: 'idle' | 'opening' | 'scraping' | 'done' | 'error'
-  const [phase, setPhase] = useState('idle');
+  const [phase,     setPhaseRaw] = useState('idle');
   const [statusMsg, setStatusMsg] = useState('');
+  const [progress,  setProgress]  = useState(0);
   const phaseRef = React.useRef('idle');
+  const popupRef = React.useRef(null);
+  const timerRef = React.useRef(null);
 
-  function updatePhase(p) { phaseRef.current = p; setPhase(p); }
+  function setPhase(p) { phaseRef.current = p; setPhaseRaw(p); }
 
-  // ── Poll for extension marker (document_start means it's injected early) ──
-  useEffect(() => {
-    function check() {
-      return !!(
-        document.getElementById('bunkplanner-extension-installed') ||
-        document.getElementById('bpp-ext-marker')
-      );
+  function injectScraper(popup) {
+    try {
+      const doc = popup.document;
+      if (!doc) return false;
+      if (doc.getElementById('_bpp_s')) return true;
+      const s = doc.createElement('script');
+      s.id = '_bpp_s';
+      s.textContent = SCRAPER_SCRIPT;
+      (doc.head || doc.body || doc.documentElement).appendChild(s);
+      return true;
+    } catch(e) { return false; }
+  }
+
+  function handleFetch() {
+    if (phaseRef.current !== 'idle') return;
+    setPhase('opening'); setStatusMsg('Opening CyberVidya...'); setProgress(10);
+    const W = Math.min(960, window.screen.width - 40);
+    const H = Math.min(700, window.screen.height - 60);
+    const L = Math.round((window.screen.width  - W) / 2);
+    const T = Math.round((window.screen.height - H) / 2);
+    const popup = window.open(
+      'https://kiet.cybervidya.net/attendance/my-attendance',
+      'bpp_cv',
+      `width=${W},height=${H},left=${L},top=${T},resizable=yes,scrollbars=yes`
+    );
+    if (!popup) {
+      setPhase('error'); setStatusMsg('Popup blocked! Allow popups for this site and retry.');
+      return;
     }
-    if (extProp || check()) { setExtInstalled(true); return; }
-    let n = 0;
+    popupRef.current = popup;
+    let tries = 0;
     const iv = setInterval(() => {
-      n++;
-      if (check()) { setExtInstalled(true); clearInterval(iv); return; }
-      if (n >= 100) clearInterval(iv); // 40s max
+      tries++;
+      if (popup.closed) { clearInterval(iv); return; }
+      if (injectScraper(popup)) clearInterval(iv);
+      if (tries > 60) clearInterval(iv);
     }, 400);
-    return () => clearInterval(iv);
-  }, [extProp]);
+    timerRef.current = setTimeout(() => {
+      if (phaseRef.current !== 'idle' && phaseRef.current !== 'done') {
+        setPhase('error'); setStatusMsg('Timeout. Login to CyberVidya and retry.');
+        if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+      }
+    }, 180000);
+  }
 
-  useEffect(() => { if (extProp) setExtInstalled(true); }, [extProp]);
-
-  // ── Listen for status updates from background via bridge ──
   useEffect(() => {
-    function onStatus(e) {
-      const { status, message, count } = e.detail || {};
-      console.log('[AutoFetchBanner] status:', status, message);
-      if (status === 'opening')  { updatePhase('opening');  setStatusMsg('Opening CyberVidya...'); }
-      if (status === 'scraping') { updatePhase('scraping'); setStatusMsg('Scraping attendance data...'); }
-      if (status === 'done')     { updatePhase('done');     setStatusMsg(`${count || ''} subjects ready!`); }
-      if (status === 'error')    { updatePhase('error');    setStatusMsg(message || 'An error occurred. Please retry.'); }
-    }
-    window.addEventListener('bpp-autofetch-status', onStatus);
-    return () => window.removeEventListener('bpp-autofetch-status', onStatus);
-  }, []);
-
-  // ── Listen for final data (CustomEvent from bridge/injection) ──
-  useEffect(() => {
-    function onSync(e) {
-      if (!['opening','scraping','waiting','done'].includes(phaseRef.current)) return;
-      const subs = ((e.detail || {}).subjects || []).filter(s => s.name && s.conducted > 0);
-      if (subs.length > 0) {
-        updatePhase('idle');
-        setStatusMsg('');
-        onDataReceived(subs);
+    function onMsg(e) {
+      const d = e.data;
+      if (!d || !d._bpp) return;
+      if (d.type === 'status') {
+        const step = d.payload && d.payload.step;
+        if (step === 'navigating') { setStatusMsg('Navigating to attendance page...'); setProgress(25); }
+        if (step === 'checking')   { setStatusMsg('Waiting for table to load...');     setPhase('waiting'); setProgress(45); }
+        if (step === 'scraping')   { setStatusMsg('Reading attendance data...');        setPhase('scraping'); setProgress(78); }
+      }
+      if (d.type === 'done') {
+        clearTimeout(timerRef.current);
+        const subs = ((d.payload && d.payload.subjects) || []).filter(s => s.name && s.conducted > 0);
+        if (subs.length > 0) {
+          setProgress(100); setPhase('done');
+          setStatusMsg(subs.length + ' subjects fetched!');
+          setTimeout(() => { if (popupRef.current && !popupRef.current.closed) popupRef.current.close(); }, 700);
+          setTimeout(() => { setPhase('idle'); setStatusMsg(''); setProgress(0); onDataReceived(subs); }, 1100);
+        } else {
+          setPhase('error'); setStatusMsg('No subjects found. Please login to CyberVidya.');
+        }
+      }
+      if (d.type === 'error') {
+        clearTimeout(timerRef.current);
+        setPhase('error'); setStatusMsg((d.payload && d.payload.msg) || 'Something went wrong. Retry.');
+        setProgress(0);
       }
     }
-    window.addEventListener('bunkplanner-sync', onSync);
-    return () => window.removeEventListener('bunkplanner-sync', onSync);
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
   }, [onDataReceived]);
 
-  // ── Polling fallback for localStorage ──
   useEffect(() => {
-    if (!['opening','scraping','waiting'].includes(phase)) return;
-    let n = 0;
+    if (!['opening','waiting','scraping'].includes(phase)) return;
     const iv = setInterval(() => {
-      n++;
-      const raw = localStorage.getItem('bp_pending_sync');
-      if (raw) {
+      if (popupRef.current && popupRef.current.closed) {
         clearInterval(iv);
-        localStorage.removeItem('bp_pending_sync');
-        try {
-          const parsed = JSON.parse(raw);
-          const subs = (parsed.subjects || []).filter(s => s.name && s.conducted > 0);
-          if (subs.length > 0) { updatePhase('idle'); setStatusMsg(''); onDataReceived(subs); return; }
-        } catch(e) {}
+        if (phaseRef.current !== 'done' && phaseRef.current !== 'idle') {
+          setPhase('idle'); setStatusMsg(''); setProgress(0);
+        }
       }
-      if (n >= 90) { updatePhase('error'); setStatusMsg('Timeout. Please login to CyberVidya and retry.'); clearInterval(iv); }
-    }, 600);
+    }, 800);
     return () => clearInterval(iv);
   }, [phase]);
 
-  function handleFetch() {
-    if (!extInstalled) return;
-    updatePhase('opening');
-    setStatusMsg('Opening CyberVidya...');
-    // Signal bridge.js → background.js → open CyberVidya tab & scrape
-    window.dispatchEvent(new CustomEvent('bpp-open-cybervidya', { detail: { returnUrl: window.location.href } }));
-  }
+  useEffect(() => {
+    return () => {
+      clearTimeout(timerRef.current);
+      if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+    };
+  }, []);
 
-  const isLoading = ['opening','scraping','waiting'].includes(phase);
-
-  const stepLabels = [
-    { n:'1', l:'Click',     active: phase !== 'idle' },
-    { n:'2', l:'CyberVidya',     active: phase === 'opening' || phase === 'scraping' },
-    { n:'3', l:'Auto scrape',    active: phase === 'scraping' },
-    { n:'4', l:'Import',    active: phase === 'done' },
-  ];
+  const isLoading = ['opening','waiting','scraping'].includes(phase);
 
   return (
     <div className="cv-fetch-banner">
       <div className="cv-banner-inner">
-        <div className="cv-banner-icon" style={{fontSize: isLoading ? '28px' : '32px'}}>
-          {isLoading ? '⏳' : phase === 'done' ? '✅' : phase === 'error' ? '❌' : '🎓'}
+        <div className="cv-banner-icon">
+          {phase==='error'?'❌': phase==='done'?'✅': isLoading?'⏳':'🎓'}
         </div>
         <div className="cv-banner-text">
           <div className="cv-banner-title">
-            {phase === 'error' ? 'Something went wrong 😅' :
-             phase === 'done'  ? 'Data is ready! 🎉' :
-             'Fetch Attendance from CyberVidya'}
+            {phase==='error'?'Something went wrong': phase==='done'?'Attendance fetched! 🎉':'Fetch Attendance from CyberVidya'}
           </div>
           <div className="cv-banner-sub">
-            {statusMsg || 'Auto-import all your subjects\' attendance in one click!'}
+            {statusMsg || 'Works on mobile & desktop — no extension needed!'}
           </div>
-          <div className="cv-banner-steps">
-            {stepLabels.map(({n, l, active}, i, a) => (
-              <React.Fragment key={n}>
-                <div className="cv-step" style={{opacity: active ? 1 : 0.45, fontWeight: active ? 700 : 400}}>
-                  <span>{n}</span> {l}
-                </div>
-                {i < a.length-1 && <span className="cv-step-arrow">→</span>}
-              </React.Fragment>
-            ))}
-          </div>
+          {!isLoading && phase==='idle' && (
+            <div className="cv-banner-steps">
+              {[{n:'1',l:'Click Fetch'},{n:'2',l:'Login'},{n:'3',l:'Auto Scrape'},{n:'4',l:'Import'}].map(({n,l},i,a)=>(
+                <React.Fragment key={n}>
+                  <div className="cv-step"><span>{n}</span> {l}</div>
+                  {i<a.length-1 && <span className="cv-step-arrow">→</span>}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
         </div>
-
-        {phase === 'idle' && (
-          <button
-            className="cv-fetch-btn"
-            onClick={handleFetch}
-            disabled={!extInstalled}
-            title={!extInstalled ? 'Install the extension first' : 'Fetch attendance from CyberVidya'}
-          >
+        {phase==='idle' && (
+          <button className="cv-fetch-btn" onClick={handleFetch}>
             <span className="cv-fetch-btn-shine"/>
-            <span style={{fontSize:'16px'}}>{extInstalled ? '⚡' : '🔌'}</span>
-            {extInstalled ? 'Fetch Attendance' : 'Extension Needed'}
+            <span style={{fontSize:'16px'}}>⚡</span> Fetch Attendance
           </button>
         )}
-
         {isLoading && (
           <div className="cv-fetching-state">
             <span className="cv-dot"/><span className="cv-dot"/><span className="cv-dot"/>
           </div>
         )}
-
-        {phase === 'error' && (
+        {phase==='error' && (
           <button className="btn btn-ghost" style={{padding:'8px 16px',fontSize:'13px',flexShrink:0}}
-            onClick={() => { updatePhase('idle'); setStatusMsg(''); }}>
+            onClick={()=>{setPhase('idle');setStatusMsg('');setProgress(0);}}>
             🔄 Retry
           </button>
         )}
       </div>
-
-      {phase === 'idle' && !extInstalled && (
-        <div className="cv-no-ext">
-          ⚠️ <strong>Extension not installed.</strong>{' '}
-          Install <strong>extension_v11.zip</strong> from brave://extensions/ first — then reload the page.
+      {isLoading && (
+        <div className="popscrape-progress" style={{marginTop:'12px',marginBottom:0}}>
+          <div className="popscrape-progress-fill" style={{width:`${progress}%`}}/>
+        </div>
+      )}
+      {phase==='idle' && (
+        <div style={{marginTop:'9px',fontSize:'11px',color:'var(--text3)',lineHeight:1.5}}>
+          💡 A popup window will open — allow popups if prompted. Works on phone &amp; desktop.
         </div>
       )}
     </div>
