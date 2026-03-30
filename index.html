@@ -615,6 +615,61 @@ input[type=number]{-moz-appearance:textfield}
 /* Tabs upgrade for timetable */
 @media(max-width:600px){.tt-period-row{grid-template-columns:40px 1fr auto;}.tt-per-pred{display:none}}
 
+
+/* ═══════════════════════════════════════════════
+   DAILY SESSIONS TAB CSS
+═══════════════════════════════════════════════ */
+.ds-week-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.ds-week-label{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text)}
+.ds-week-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;color:var(--text2)}
+.ds-week-btn:hover{border-color:var(--border2);color:var(--text)}
+
+.ds-day-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;transition:all .2s}
+.ds-day-card:hover{border-color:var(--border2)}
+.ds-day-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;background:var(--surface);user-select:none;gap:10px}
+.ds-day-header:hover{background:var(--surface2)}
+.ds-day-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.ds-day-date{font-size:11px;color:var(--text3);font-weight:500}
+.ds-day-pills{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ds-day-pill{font-size:10px;font-weight:700;padding:2px 9px;border-radius:100px;border:1px solid}
+.ds-pill-present{color:var(--green);border-color:rgba(52,211,153,.3);background:var(--green-bg)}
+.ds-pill-absent{color:var(--red);border-color:rgba(248,113,113,.25);background:var(--red-bg)}
+.ds-pill-noclass{color:var(--text3);border-color:var(--border);background:var(--surface)}
+.ds-chevron{font-size:12px;color:var(--text3);transition:transform .2s;flex-shrink:0}
+.ds-day-card.open .ds-chevron{transform:rotate(180deg)}
+
+.ds-periods{border-top:1px solid var(--border)}
+.ds-period-row{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .15s}
+.ds-period-row:last-child{border-bottom:none}
+.ds-period-row:hover{background:var(--surface)}
+.ds-period-row.present{background:rgba(52,211,153,.03)}
+.ds-period-row.absent{background:rgba(248,113,113,.02)}
+.ds-per-num{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text3);text-align:center}
+.ds-per-info{}
+.ds-per-code{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
+.ds-per-name{font-size:11px;color:var(--text2);margin-top:1px}
+.ds-per-time{font-size:10px;color:var(--text3);margin-top:1px}
+.ds-status-badge{display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:100px;font-size:11px;font-weight:700;border:1px solid;white-space:nowrap}
+.ds-badge-present{color:var(--green);border-color:rgba(52,211,153,.3);background:var(--green-bg)}
+.ds-badge-absent{color:var(--red);border-color:rgba(248,113,113,.25);background:var(--red-bg)}
+.ds-badge-noclass{color:var(--text3);border-color:var(--border);background:var(--surface)}
+.ds-badge-unmarked{color:var(--text3);border-color:var(--border);background:var(--surface);opacity:.6}
+
+/* Snapshot info banner */
+.ds-snapshot-info{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);border:1px solid rgba(124,106,247,.2);background:rgba(124,106,247,.05);font-size:12px;color:var(--text2);margin-bottom:16px}
+.ds-snapshot-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);flex-shrink:0;animation:dotPulse 2s ease infinite}
+
+/* Today highlight */
+.ds-today-badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;margin-left:8px;vertical-align:middle}
+
+/* Stats summary */
+.ds-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.ds-sum-card{flex:1;min-width:80px;padding:14px 10px;text-align:center;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)}
+.ds-sum-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1}
+.ds-sum-label{font-size:10px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+
+@media(max-width:480px){.ds-period-row{grid-template-columns:36px 1fr auto}}
+
 </style>
 </head>
 <body>
@@ -2365,7 +2420,7 @@ async function runOCR(imageFile, onProgress) {
 }
 
 // ── Gemini Vision scan — auto-fallback model chain for free tier ──────
-// Model priority: gemini-2.0-flash-lite → gemini-2.0-flash → gemini-1.5-flash-latest
+// Model priority: gemini-2.0-flash-lite → gemini-2.0-flash → gemini-1.5-flash → gemini-1.5-flash-8b
 // Each has separate quota pool; 429 auto-retries next model.
 async function runGeminiScan(imageFile, apiKey, onStep) {
   if (!apiKey || !apiKey.trim()) throw new Error('Please enter your Gemini API key first.');
@@ -2400,21 +2455,23 @@ Also list any subject code → full name mappings you see at the bottom of the t
     generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
   };
 
-  // Model chain — each has separate free-tier quota pool
+  // Model chain — stable models only (no deprecated ones)
+  // v1 endpoint = stable; v1beta = experimental (avoid for production)
   const MODELS = [
-    'gemini-2.0-flash-lite',   // highest free RPM
-    'gemini-2.0-flash',        // fallback
-    'gemini-1.5-flash-latest', // last resort (different pool)
+    { name:'gemini-2.0-flash-lite',  api:'v1beta' }, // free tier, high RPM
+    { name:'gemini-2.0-flash',       api:'v1beta' }, // fallback
+    { name:'gemini-1.5-flash',       api:'v1beta' }, // stable non-deprecated
+    { name:'gemini-1.5-flash-8b',    api:'v1beta' }, // smallest, most available
   ];
 
   let lastErr = null;
 
   for (let mi = 0; mi < MODELS.length; mi++) {
-    const model = MODELS[mi];
+    const { name: model, api: apiVersion } = MODELS[mi];
     const modelLabel = mi === 0 ? 'Gemini AI' : `Gemini (${model})`;
-    onStep(`Sending to ${modelLabel}...`, 25 + mi * 15);
+    onStep(`Sending to ${modelLabel}...`, 25 + mi * 12);
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+    const endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${apiKey.trim()}`;
 
     try {
       const res = await fetch(endpoint, {
@@ -2460,9 +2517,11 @@ Also list any subject code → full name mappings you see at the bottom of the t
     }
   }
 
+  const lastMsg = lastErr?.message || 'Unknown error';
   throw new Error(
-    '⏳ All Gemini free quotas temporarily exhausted. ' +
-    'Wait 60 seconds and try again — it will work!'
+    `All models tried. Last error: ${lastMsg}. ` +
+    'If you see 404, your API key may be restricted. ' +
+    'Try waiting 60 seconds or get a fresh key from aistudio.google.com.'
   );
 }
 
@@ -3204,6 +3263,414 @@ function TimetablePage({ user }) {
   );
 }
 
+
+// ═══════════════════════════════════════════════════════════════════
+//  ATTENDANCE SNAPSHOT & DAY-WISE TRACKING ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Date helpers ─────────────────────────────────────────────────
+function todayStr() {
+  return new Date().toISOString().slice(0,10); // "YYYY-MM-DD"
+}
+function dayOfWeek(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
+}
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-IN',{weekday:'short',month:'short',day:'numeric'});
+}
+function getWeekDates(offsetWeeks=0) {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day===0?6:day-1) + offsetWeeks*7);
+  return Array.from({length:5}, (_,i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    return d.toISOString().slice(0,10);
+  });
+}
+
+// ── Save attendance snapshot to Firestore ─────────────────────────
+async function saveAttendanceSnapshot(uid, subjects) {
+  if (!uid || !db || !subjects.length) return;
+  const date = todayStr();
+  const snap = {};
+  subjects.forEach(s => {
+    snap[s.name] = {
+      attended:  s.attended  || 0,
+      conducted: s.conducted || 0,
+      savedAt:   date,
+    };
+  });
+  try {
+    await db.collection('users').doc(uid)
+            .collection('attendanceSnapshots').doc(date)
+            .set({ date, subjects: snap, savedAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+    console.log('[BPP] Snapshot saved for', date, '—', Object.keys(snap).length, 'subjects');
+    return date;
+  } catch(e) {
+    console.error('[BPP] Snapshot save error:', e);
+    return null;
+  }
+}
+
+// ── Compare two snapshots → generate attendance logs ──────────────
+// Returns array of { date, subject, status: 'present'|'absent'|'no-class' }
+function compareSnapshots(oldSnap, newSnap) {
+  const logs = [];
+  const date = todayStr();
+
+  if (!oldSnap || !newSnap) return logs; // first fetch — no comparison possible
+
+  const allSubjects = new Set([
+    ...Object.keys(oldSnap.subjects || {}),
+    ...Object.keys(newSnap.subjects  || {}),
+  ]);
+
+  for (const name of allSubjects) {
+    const old_ = (oldSnap.subjects || {})[name];
+    const new_ = (newSnap.subjects  || {})[name];
+
+    if (!old_ || !new_) continue; // subject added/removed — skip
+
+    const attendedDiff  = (new_.attended  || 0) - (old_.attended  || 0);
+    const conductedDiff = (new_.conducted || 0) - (old_.conducted || 0);
+
+    let status = 'no-class';
+    if (conductedDiff > 0) {
+      // A class was conducted
+      if (attendedDiff > 0) {
+        status = 'present';    // attended increased → present
+      } else {
+        status = 'absent';     // conducted increased but attended same → absent
+      }
+    }
+    // conductedDiff === 0 → no class today
+
+    logs.push({ date, subject: name, status, attendedDiff, conductedDiff });
+  }
+  return logs;
+}
+
+// ── Save attendance logs to Firestore ─────────────────────────────
+async function saveAttendanceLogs(uid, logs) {
+  if (!uid || !db || !logs.length) return;
+  const date = todayStr();
+
+  // Use batch write for atomicity
+  const batch = db.batch();
+  logs.forEach(log => {
+    const docId = `${log.date}_${log.subject.replace(/\s+/g,'_').slice(0,40)}`;
+    const ref = db.collection('users').doc(uid).collection('attendanceLogs').doc(docId);
+    batch.set(ref, {
+      date:    log.date,
+      subject: log.subject,
+      status:  log.status,
+      savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+
+  try {
+    await batch.commit();
+    console.log('[BPP] Attendance logs saved:', logs.length, 'entries for', date);
+  } catch(e) {
+    console.error('[BPP] Log save error:', e);
+  }
+}
+
+// ── Full snapshot + comparison flow ───────────────────────────────
+// Called whenever new attendance data arrives (CyberVidya fetch / SyncBanner import)
+async function runAttendanceSnapshot(uid, newSubjects) {
+  if (!uid || !db || !newSubjects?.length) return;
+
+  const today = todayStr();
+
+  try {
+    // 1. Load latest existing snapshot (not today's)
+    const snapColl = db.collection('users').doc(uid).collection('attendanceSnapshots');
+    const existing = await snapColl.orderBy('date','desc').limit(2).get();
+
+    let oldSnap = null;
+    existing.docs.forEach(doc => {
+      // Find the most recent snapshot that's NOT today
+      if (!oldSnap && doc.id !== today) oldSnap = doc.data();
+    });
+
+    // 2. Build new snapshot object
+    const newSnapObj = {
+      date: today,
+      subjects: {},
+      savedAt: null,
+    };
+    newSubjects.forEach(s => {
+      newSnapObj.subjects[s.name] = {
+        attended:  s.attended  || 0,
+        conducted: s.conducted || 0,
+        savedAt:   today,
+      };
+    });
+
+    // 3. Compare → generate logs (only if we have a previous snapshot)
+    if (oldSnap) {
+      const logs = compareSnapshots(oldSnap, newSnapObj);
+      const meaningful = logs.filter(l => l.status !== 'no-class');
+      if (meaningful.length > 0) {
+        await saveAttendanceLogs(uid, meaningful);
+        console.log('[BPP] Generated', meaningful.length, 'attendance log entries');
+        toast(`📅 ${meaningful.length} attendance log${meaningful.length>1?'s':''} recorded!`, 'success');
+      }
+    } else {
+      console.log('[BPP] No previous snapshot found — this is the first fetch. Logs will be generated on next fetch.');
+    }
+
+    // 4. Save today's snapshot (overwrite if already saved today)
+    await saveAttendanceSnapshot(uid, newSubjects);
+
+  } catch(e) {
+    console.error('[BPP] Snapshot flow error:', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  DAILY SESSIONS TAB COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+function DailySessionsPage({ user }) {
+  const uid = user?.uid;
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [openDays,   setOpenDays]   = useState(new Set([DAYS[new Date().getDay()-1]||'Monday']));
+  const [logs,       setLogs]       = useState([]);    // all fetched logs
+  const [timetable,  setTimetable]  = useState({});
+  const [subjectMap, setSubjectMap] = useState({});
+  const [snapDates,  setSnapDates]  = useState([]);    // dates with snapshots
+  const [loading,    setLoading]    = useState(true);
+
+  const weekDates = getWeekDates(weekOffset);
+  const weekLabel = (() => {
+    const s = new Date(weekDates[0]+'T12:00:00');
+    const e = new Date(weekDates[4]+'T12:00:00');
+    const opts = {month:'short',day:'numeric'};
+    return `${s.toLocaleDateString('en-IN',opts)} – ${e.toLocaleDateString('en-IN',opts)}`;
+  })();
+
+  // Load timetable + logs from Firestore
+  useEffect(() => {
+    if (!uid || !db) { setLoading(false); return; }
+    async function load() {
+      try {
+        // Load timetable
+        const ttDoc = await db.collection('users').doc(uid).collection('timetable').doc('data').get();
+        if (ttDoc.exists) {
+          setTimetable(ttDoc.data().timetable || {});
+          setSubjectMap(ttDoc.data().subjectMap || {});
+        }
+
+        // Load snapshot dates (so we know which days have data)
+        const snapColl = await db.collection('users').doc(uid).collection('attendanceSnapshots')
+                                  .orderBy('date','desc').limit(30).get();
+        setSnapDates(snapColl.docs.map(d=>d.id));
+
+        // Load logs for current + adjacent weeks
+        const startDate = getWeekDates(-1)[0];
+        const endDate   = getWeekDates(1)[4];
+        const logsSnap  = await db.collection('users').doc(uid).collection('attendanceLogs')
+                                   .where('date','>=',startDate)
+                                   .where('date','<=',endDate)
+                                   .get();
+        setLogs(logsSnap.docs.map(d=>d.data()));
+      } catch(e) {
+        console.error('DailySessions load error:', e);
+      }
+      setLoading(false);
+    }
+    load();
+  }, [uid, weekOffset]);
+
+  function toggleDay(day) {
+    setOpenDays(prev => {
+      const s = new Set(prev);
+      if (s.has(day)) s.delete(day); else s.add(day);
+      return s;
+    });
+  }
+
+  // Get log status for a subject on a date
+  function getStatus(dateStr, subjectName) {
+    const log = logs.find(l => l.date === dateStr && l.subject === subjectName);
+    return log?.status || null; // 'present'|'absent'|'no-class'|null
+  }
+
+  // Week summary counts
+  const weekSummary = weekDates.reduce((acc,date) => {
+    logs.filter(l=>l.date===date).forEach(l=>{
+      if (l.status==='present') acc.present++;
+      else if (l.status==='absent') acc.absent++;
+    });
+    return acc;
+  }, {present:0,absent:0});
+
+  const todayISO = todayStr();
+  const todayDay = dayOfWeek(todayISO);
+
+  if (loading) return (
+    <div style={{textAlign:'center',padding:'60px 24px'}}>
+      <div style={{fontSize:'36px',animation:'spin 1s linear infinite',marginBottom:'12px'}}>⏳</div>
+      <div style={{color:'var(--text2)',fontSize:'13px'}}>Loading attendance logs...</div>
+    </div>
+  );
+
+  const hasTimetable = Object.values(timetable).some(d=>d?.length>0);
+
+  return (
+    <div>
+      {/* Info banner */}
+      <div className="ds-snapshot-info">
+        <span className="ds-snapshot-dot"/>
+        <span>
+          {snapDates.length === 0
+            ? '🔴 No attendance snapshots yet. Fetch attendance from CyberVidya to start tracking.'
+            : snapDates.length === 1
+            ? '🟡 First snapshot saved. Fetch again tomorrow to generate attendance logs.'
+            : `🟢 Tracking active — ${snapDates.length} snapshots saved. Last: ${formatDate(snapDates[0])}`}
+        </span>
+      </div>
+
+      {!hasTimetable && (
+        <div style={{padding:'14px 16px',background:'var(--yellow-bg)',border:'1px solid rgba(251,191,36,.2)',borderRadius:'var(--radius-sm)',fontSize:'13px',color:'var(--yellow)',marginBottom:'16px'}}>
+          ⚠️ No timetable set up yet. Go to the <strong>Timetable</strong> tab to upload and save your timetable.
+        </div>
+      )}
+
+      {/* Week navigation */}
+      <div className="ds-week-nav">
+        <button className="ds-week-btn" onClick={()=>setWeekOffset(p=>p-1)}>‹</button>
+        <div>
+          <div className="ds-week-label">Week of {weekLabel}</div>
+          {weekOffset===0 && <div style={{fontSize:'11px',color:'var(--accent2)',marginTop:'2px',textAlign:'center'}}>Current Week</div>}
+        </div>
+        <button className="ds-week-btn" onClick={()=>setWeekOffset(p=>p+1)}>›</button>
+      </div>
+
+      {/* Weekly summary */}
+      <div className="ds-summary">
+        <div className="ds-sum-card">
+          <div className="ds-sum-val" style={{color:'var(--green)'}}>{weekSummary.present}</div>
+          <div className="ds-sum-label">Present</div>
+        </div>
+        <div className="ds-sum-card">
+          <div className="ds-sum-val" style={{color:'var(--red)'}}>{weekSummary.absent}</div>
+          <div className="ds-sum-label">Absent</div>
+        </div>
+        <div className="ds-sum-card">
+          <div className="ds-sum-val" style={{color:'var(--text2)'}}>{weekSummary.present+weekSummary.absent}</div>
+          <div className="ds-sum-label">Total</div>
+        </div>
+        <div className="ds-sum-card">
+          <div className="ds-sum-val" style={{color:'var(--accent2)'}}>
+            {weekSummary.present+weekSummary.absent > 0
+              ? Math.round((weekSummary.present/(weekSummary.present+weekSummary.absent))*100)+'%'
+              : '—'}
+          </div>
+          <div className="ds-sum-label">This Week</div>
+        </div>
+      </div>
+
+      {/* Day cards */}
+      {weekDates.map((dateStr, di) => {
+        const dayName = DAYS[di];
+        const isToday = dateStr === todayISO;
+        const isOpen  = openDays.has(dayName);
+        const daySlots = (timetable[dayName] || []).sort((a,b)=>a.period-b.period);
+        const dayLogs  = logs.filter(l=>l.date===dateStr);
+
+        const presentCt = dayLogs.filter(l=>l.status==='present').length;
+        const absentCt  = dayLogs.filter(l=>l.status==='absent').length;
+        const hasData   = dayLogs.length > 0;
+        const hasSnap   = snapDates.includes(dateStr);
+
+        return (
+          <div key={dayName} className={`ds-day-card ${isOpen?'open':''}`}>
+            <div className="ds-day-header" onClick={()=>toggleDay(dayName)}>
+              <div>
+                <span className="ds-day-name">
+                  {dayName}
+                  {isToday && <span className="ds-today-badge">TODAY</span>}
+                </span>
+                <div className="ds-day-date">{formatDate(dateStr)}</div>
+              </div>
+              <div className="ds-day-pills">
+                {presentCt > 0 && <span className="ds-day-pill ds-pill-present">✅ {presentCt} Present</span>}
+                {absentCt  > 0 && <span className="ds-day-pill ds-pill-absent">❌ {absentCt} Absent</span>}
+                {!hasData && hasSnap && <span className="ds-day-pill ds-pill-noclass">No classes</span>}
+                {!hasData && !hasSnap && daySlots.length>0 && <span className="ds-day-pill ds-pill-noclass">No data yet</span>}
+              </div>
+              <span className="ds-chevron">▾</span>
+            </div>
+
+            {isOpen && (
+              <div className="ds-periods">
+                {daySlots.length === 0 ? (
+                  <div style={{padding:'20px 18px',color:'var(--text3)',fontSize:'13px',textAlign:'center'}}>
+                    No periods scheduled in timetable
+                  </div>
+                ) : (
+                  daySlots.map(slot => {
+                    const subjName = subjectMap[slot.subject] || slot.subject;
+                    const rawStatus = getStatus(dateStr, subjName) || getStatus(dateStr, slot.subject);
+                    // Map to display
+                    const statusDisplay = rawStatus === 'present' ? 'present'
+                                        : rawStatus === 'absent'  ? 'absent'
+                                        : rawStatus === 'no-class'? 'no-class'
+                                        : null; // null = no log yet
+
+                    return (
+                      <div key={slot.period} className={`ds-period-row ${statusDisplay||''}`}>
+                        {/* Period number */}
+                        <div className="ds-per-num">{slot.period}</div>
+
+                        {/* Subject info */}
+                        <div className="ds-per-info">
+                          <div className="ds-per-code" style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                            {slot.subject}
+                            {slot.isLab && <span style={{fontSize:'9px',fontWeight:800,padding:'1px 6px',borderRadius:'100px',background:'var(--yellow-bg)',color:'var(--yellow)',border:'1px solid rgba(251,191,36,.2)'}}>LAB</span>}
+                          </div>
+                          {subjName !== slot.subject && (
+                            <div className="ds-per-name">{subjName.slice(0,40)}</div>
+                          )}
+                          <div className="ds-per-time">{slot.time}</div>
+                        </div>
+
+                        {/* Status badge */}
+                        <div className={`ds-status-badge ${
+                          statusDisplay==='present' ? 'ds-badge-present' :
+                          statusDisplay==='absent'  ? 'ds-badge-absent'  :
+                          statusDisplay==='no-class'? 'ds-badge-noclass' :
+                          'ds-badge-unmarked'
+                        }`}>
+                          {statusDisplay==='present' ? '✅ Present'  :
+                           statusDisplay==='absent'  ? '❌ Absent'   :
+                           statusDisplay==='no-class'? '⚪ No Class' :
+                           '— No data'}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{marginTop:'16px',fontSize:'12px',color:'var(--text3)',textAlign:'center',lineHeight:1.6}}>
+        📌 Attendance is auto-tracked each time you fetch from CyberVidya.<br/>
+        Logs are generated by comparing consecutive snapshots.
+      </div>
+    </div>
+  );
+}
+
 // ══ App ═══════════════════════════════════════════════════
 // ── ProfileDropdown component ───────────────────────────────
 const AVATAR_COLORS = ['#7c6af7','#ec4899','#f97316','#10b981','#06b6d4','#a855f7','#f59e0b'];
@@ -3504,6 +3971,10 @@ function App() {
       setSyncBanner({ subjects });
       setTab('subjects');
       toast(`🎓 ${subjects.length} subjects fetched from CyberVidya!`, 'success');
+      // Trigger attendance snapshot comparison
+      if (user?.uid) {
+        setTimeout(() => runAttendanceSnapshot(user.uid, subjects), 2000);
+      }
     } else {
       console.warn('[BunkPlanner] processSyncPayload: no valid subjects parsed', detail);
       toast('Could not parse CyberVidya data 😅', 'error');
@@ -3673,16 +4144,23 @@ function App() {
           )}
         </div>
         <AutoFetchBanner
-          onDataReceived={(subs)=>{ setSyncBanner({subjects:subs}); setTab('subjects'); }}
+          onDataReceived={(subs)=>{
+            setSyncBanner({subjects:subs});
+            setTab('subjects');
+            // Auto-snapshot on fetch
+            if (user?.uid) setTimeout(()=>runAttendanceSnapshot(user.uid, subs), 2500);
+          }}
         />
         <div className="tabs">
-          <button className={`tab-btn ${tab==='subjects'?'active':''}`} onClick={()=>setTab('subjects')}>📚 My Subjects</button>
-          <button className={`tab-btn ${tab==='calc'?'active':''}`} onClick={()=>setTab('calc')}>🧮 Calculator</button>
+          <button className={`tab-btn ${tab==='subjects'?'active':''}`} onClick={()=>setTab('subjects')}>📚 Subjects</button>
+          <button className={`tab-btn ${tab==='calc'?'active':''}`} onClick={()=>setTab('calc')}>🧮 Calc</button>
           <button className={`tab-btn ${tab==='timetable'?'active':''}`} onClick={()=>setTab('timetable')}>🗓️ Timetable</button>
+          <button className={`tab-btn ${tab==='daily'?'active':''}`} onClick={()=>setTab('daily')}>📅 Daily</button>
         </div>
         {tab==='subjects'  && <Subjects user={user}/>}
         {tab==='calc'      && <Calculator/>}
         {tab==='timetable' && <TimetablePage user={user}/>}
+        {tab==='daily'     && <DailySessionsPage user={user}/>}
       </main>
       <footer className="footer">Built with <span>❤️</span> for KIET students — bunk planning is a life skill 😎</footer>
       <ToastContainer/>
