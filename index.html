@@ -2455,13 +2455,12 @@ Also list any subject code → full name mappings you see at the bottom of the t
     generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
   };
 
-  // Model chain — updated March 2026, all verified working on free tier
-  // gemini-2.0-flash is the primary stable model; others are fallbacks
+  // Model chain — March 2026, verified working on free tier with image support
   const MODELS = [
-    { name:'gemini-2.0-flash',           api:'v1beta' }, // primary — fast, free, multimodal
-    { name:'gemini-2.0-flash-lite',      api:'v1beta' }, // lighter fallback
-    { name:'gemini-1.5-flash',           api:'v1beta' }, // proven stable fallback
-    { name:'gemini-1.5-pro',             api:'v1beta' }, // last resort
+    { name:'gemini-2.0-flash',           api:'v1beta' }, // primary — multimodal, free tier
+    { name:'gemini-2.0-flash-lite',      api:'v1beta' }, // lighter, high RPM fallback
+    { name:'gemini-1.5-flash',           api:'v1beta' }, // stable proven fallback
+    { name:'gemini-1.5-flash-8b',        api:'v1beta' }, // smallest free tier fallback
   ];
 
   let lastErr = null;
