@@ -2657,7 +2657,7 @@ function TimetablePage({ user }) {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
   const [drag, setDrag]             = useState(false);
-  const [geminiKey, setGeminiKey]   = useState(() => localStorage.getItem('bpp_gemini_key') || 'AIzaSyB8VBazGX7dP63aSB3DpoqesSxhnjmquM8');
+  const [geminiKey, setGeminiKey]   = useState(() => localStorage.getItem('bpp_gemini_key') || '');
   const [geminiError, setGeminiError] = useState('');
   const [geminiLoading, setGeminiLoading] = useState(false);
   const fileRef = React.useRef();
