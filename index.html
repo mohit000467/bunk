@@ -2364,8 +2364,9 @@ async function runOCR(imageFile, onProgress) {
   return result.data.text;
 }
 
-// ── Gemini Vision scan — uses gemini-2.0-flash (latest stable) ──────
-// Model fixed: gemini-1.5-flash is DEPRECATED → use gemini-2.0-flash
+// ── Gemini Vision scan — auto-fallback model chain for free tier ──────
+// Model priority: gemini-2.0-flash-lite → gemini-2.0-flash → gemini-1.5-flash-latest
+// Each has separate quota pool; 429 auto-retries next model.
 async function runGeminiScan(imageFile, apiKey, onStep) {
   if (!apiKey || !apiKey.trim()) throw new Error('Please enter your Gemini API key first.');
 
@@ -2380,10 +2381,6 @@ async function runGeminiScan(imageFile, apiKey, onStep) {
   });
 
   const mimeType = imageFile.type || 'image/jpeg';
-  onStep('Sending to Gemini AI...', 30);
-
-  // Correct working endpoint: gemini-2.0-flash via v1beta
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}`;
 
   const prompt = `You are a timetable OCR assistant. Extract the class timetable from this image.
 
@@ -2396,39 +2393,77 @@ Use the subject codes shown in the timetable. If a slot is empty or break, write
 Also list any subject code → full name mappings you see at the bottom of the table.`;
 
   const body = {
-    contents: [{
-      parts: [
-        { text: prompt },
-        { inline_data: { mime_type: mimeType, data: base64 } }
-      ]
-    }],
-    generationConfig: {
-      temperature: 0.1,
-      maxOutputTokens: 2048,
-    }
+    contents: [{ parts: [
+      { text: prompt },
+      { inline_data: { mime_type: mimeType, data: base64 } }
+    ]}],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
   };
 
-  onStep('Gemini AI reading timetable...', 60);
+  // Model chain — each has separate free-tier quota pool
+  const MODELS = [
+    'gemini-2.0-flash-lite',   // highest free RPM
+    'gemini-2.0-flash',        // fallback
+    'gemini-1.5-flash-latest', // last resort (different pool)
+  ];
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+  let lastErr = null;
 
-  const json = await res.json();
+  for (let mi = 0; mi < MODELS.length; mi++) {
+    const model = MODELS[mi];
+    const modelLabel = mi === 0 ? 'Gemini AI' : `Gemini (${model})`;
+    onStep(`Sending to ${modelLabel}...`, 25 + mi * 15);
 
-  if (!res.ok) {
-    const errMsg = json?.error?.message || `API error ${res.status}`;
-    throw new Error(`Gemini API error ${res.status}: ${errMsg}`);
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const json = await res.json();
+
+      if (res.status === 429) {
+        // Rate limited on this model — try next model
+        lastErr = new Error(`QUOTA_429:${model}`);
+        onStep(`Quota reached for ${model}, trying next model...`, 30 + mi * 15);
+        // Short wait before next model
+        await new Promise(r => setTimeout(r, 1500));
+        continue;
+      }
+
+      if (!res.ok) {
+        const errMsg = json?.error?.message || `API error ${res.status}`;
+        // Non-quota error on this model — skip to next
+        lastErr = new Error(errMsg);
+        if (mi < MODELS.length - 1) {
+          onStep(`Trying next model...`, 35 + mi * 15);
+          await new Promise(r => setTimeout(r, 800));
+          continue;
+        }
+        throw new Error(`Gemini error ${res.status}: ${errMsg}`);
+      }
+
+      // Success!
+      onStep('Parsing AI response...', 85);
+      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error('Gemini returned empty response. Try again.');
+
+      return text; // success
+    } catch(fetchErr) {
+      if (mi === MODELS.length - 1) throw fetchErr;
+      lastErr = fetchErr;
+      onStep('Retrying with next model...', 40 + mi * 15);
+      await new Promise(r => setTimeout(r, 1000));
+    }
   }
 
-  onStep('Parsing AI response...', 85);
-
-  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Gemini returned empty response. Try again.');
-
-  return text;
+  throw new Error(
+    '⏳ All Gemini free quotas temporarily exhausted. ' +
+    'Wait 60 seconds and try again — it will work!'
+  );
 }
 
 // ── Core Timetable Parser ──────────────────────────────────────────
@@ -2810,8 +2845,17 @@ function TimetablePage({ user }) {
               Free tier: 15 requests/min · Your key stays on your device only
             </div>
             {geminiError && (
-              <div style={{marginTop:'8px',padding:'8px 12px',background:'var(--red-bg)',border:'1px solid rgba(248,113,113,.2)',borderRadius:'8px',fontSize:'12px',color:'var(--red)'}}>
-                ⚠️ {geminiError}
+              <div style={{marginTop:'8px',padding:'10px 13px',background:'var(--red-bg)',border:'1px solid rgba(248,113,113,.2)',borderRadius:'8px',fontSize:'12px',color:'var(--red)',lineHeight:'1.6'}}>
+                {geminiError.includes('quota') || geminiError.includes('QUOTA') || geminiError.includes('429') || geminiError.includes('exhausted')
+                  ? <>
+                      <div style={{fontWeight:700,marginBottom:'4px'}}>⏳ Rate Limit — Wait 1 minute</div>
+                      <div>Free tier: 15 requests/min per model. All models temporarily exhausted.</div>
+                      <div style={{marginTop:'4px',color:'rgba(248,113,113,.7)'}}>
+                        👉 Wait ~60 seconds then click "Scan with Gemini AI" again. It will work!
+                      </div>
+                    </>
+                  : <>⚠️ {geminiError}</>
+                }
               </div>
             )}
           </div>
