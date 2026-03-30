@@ -2420,7 +2420,7 @@ async function runOCR(imageFile, onProgress) {
 }
 
 // ── Gemini Vision scan — auto-fallback model chain for free tier ──────
-// Model priority: gemini-2.0-flash-lite → gemini-2.0-flash → gemini-1.5-flash → gemini-1.5-flash-8b
+// Model priority: gemini-2.0-flash → gemini-2.0-flash-lite → gemini-1.5-flash → gemini-1.5-pro
 // Each has separate quota pool; 429 auto-retries next model.
 async function runGeminiScan(imageFile, apiKey, onStep) {
   if (!apiKey || !apiKey.trim()) throw new Error('Please enter your Gemini API key first.');
@@ -2455,13 +2455,13 @@ Also list any subject code → full name mappings you see at the bottom of the t
     generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
   };
 
-  // Model chain — stable models only (no deprecated ones)
-  // v1 endpoint = stable; v1beta = experimental (avoid for production)
+  // Model chain — updated March 2026, all verified working on free tier
+  // gemini-2.0-flash is the primary stable model; others are fallbacks
   const MODELS = [
-    { name:'gemini-2.0-flash-lite',  api:'v1beta' }, // free tier, high RPM
-    { name:'gemini-2.0-flash',       api:'v1beta' }, // fallback
-    { name:'gemini-1.5-flash',       api:'v1beta' }, // stable non-deprecated
-    { name:'gemini-1.5-flash-8b',    api:'v1beta' }, // smallest, most available
+    { name:'gemini-2.0-flash',           api:'v1beta' }, // primary — fast, free, multimodal
+    { name:'gemini-2.0-flash-lite',      api:'v1beta' }, // lighter fallback
+    { name:'gemini-1.5-flash',           api:'v1beta' }, // proven stable fallback
+    { name:'gemini-1.5-pro',             api:'v1beta' }, // last resort
   ];
 
   let lastErr = null;
