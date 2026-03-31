@@ -523,12 +523,131 @@ input[type=number]{-moz-appearance:textfield}
   border:1px solid var(--border);
 }
 
+
+/* ═══════════════════════════════════════
+   TIMETABLE CSS
+═══════════════════════════════════════ */
+.tt-upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:all .25s;background:var(--surface);position:relative;overflow:hidden}
+.tt-upload-zone:hover,.tt-upload-zone.drag{border-color:var(--accent);background:rgba(124,106,247,.05)}
+.tt-upload-zone.drag{transform:scale(1.01)}
+.tt-upload-icon{font-size:48px;margin-bottom:14px;display:block}
+.tt-upload-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px}
+.tt-upload-sub{font-size:13px;color:var(--text2);line-height:1.6;max-width:360px;margin:0 auto}
+.tt-upload-btn{margin-top:16px;display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.tt-upload-btn:hover{box-shadow:0 4px 20px rgba(124,106,247,.4);transform:translateY(-1px)}
+.tt-progress-wrap{padding:32px;text-align:center}
+.tt-progress-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px}
+.tt-progress-sub{font-size:13px;color:var(--text2);margin-bottom:24px}
+.tt-progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.tt-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .4s ease}
+.tt-progress-pct{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent2)}
+.tt-step-list{display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:16px}
+.tt-step{display:flex;align-items:center;gap:10px;font-size:13px;padding:8px 12px;border-radius:var(--radius-xs);border:1px solid var(--border)}
+.tt-step.done{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.2);color:var(--green)}
+.tt-step.active{background:rgba(124,106,247,.07);border-color:rgba(124,106,247,.2);color:var(--accent2)}
+.tt-step.wait{color:var(--text3)}
+.tt-grid-wrap{overflow-x:auto;margin-top:20px;border-radius:var(--radius);border:1px solid var(--border)}
+.tt-table{width:100%;border-collapse:collapse;font-size:12px}
+.tt-table th{background:var(--surface2);color:var(--text2);font-weight:700;padding:10px 8px;text-align:center;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.tt-table td{border:1px solid var(--border);padding:8px 6px;text-align:center;vertical-align:middle;min-width:80px;transition:background .15s}
+.tt-table td:first-child{font-weight:700;color:var(--text2);background:var(--surface);font-size:11px;text-transform:uppercase;white-space:nowrap;padding:8px 12px}
+.tt-table td:hover:not(:first-child){background:var(--surface2)}
+.tt-cell-lab{color:var(--yellow);font-size:9px;font-weight:700;background:var(--yellow-bg);border:1px solid rgba(251,191,36,.2);padding:1px 6px;border-radius:100px;margin-top:1px;display:inline-block}
+.tt-cell-name{font-size:10px;color:var(--text2);line-height:1.3}
+.tt-cell-elective{color:var(--accent2);font-size:10px;font-weight:600}
+.tt-map-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:12px}
+.tt-map-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xs)}
+.tt-map-code{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--accent2);min-width:64px;flex-shrink:0}
+.tt-map-arrow{color:var(--text3);font-size:12px;flex-shrink:0}
+.tt-map-input{flex:1;background:transparent;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;padding:2px 4px}
+.tt-map-input:focus{border-bottom:1px solid var(--accent)}
+.tt-day-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px}
+.tt-day-tab{padding:8px 16px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.tt-day-tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent;box-shadow:0 4px 16px rgba(124,106,247,.3)}
+.tt-day-tab:hover:not(.active){border-color:var(--border2);color:var(--text)}
+.tt-period-list{display:flex;flex-direction:column;gap:10px}
+.tt-period-row{display:grid;grid-template-columns:48px 1fr auto auto;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);transition:all .2s}
+.tt-period-row:hover{border-color:var(--border2);background:var(--surface2)}
+.tt-period-row.present{border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.04)}
+.tt-period-row.absent{border-color:rgba(248,113,113,.2);background:rgba(248,113,113,.03)}
+.tt-per-num{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text3);text-align:center}
+.tt-per-subj{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+.tt-per-time{font-size:11px;color:var(--text3);margin-top:2px}
+.tt-per-name{font-size:12px;color:var(--text2)}
+.tt-pred-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tt-pred-chip{font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px;border:1px solid;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;background:transparent}
+.tt-pred-attend{color:var(--green);border-color:rgba(52,211,153,.3)}.tt-pred-attend:hover{background:var(--green-bg)}
+.tt-pred-skip{color:var(--red);border-color:rgba(248,113,113,.3)}.tt-pred-skip:hover{background:var(--red-bg)}
+.tt-pred-result{font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px;border:1px solid}
+.tt-today-stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.tt-today-stat{padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;gap:10px}
+.tt-today-stat-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+.tt-today-stat-label{font-size:11px;color:var(--text2);font-weight:600}
+.tt-error{padding:14px 18px;background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);border-radius:var(--radius-sm);font-size:13px;color:var(--red);margin-bottom:16px}
+.tt-img-preview{width:100%;max-height:220px;object-fit:contain;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:16px}
+@media(max-width:600px){.tt-period-row{grid-template-columns:40px 1fr auto}}
+
+/* ═══════════════════════════════════════
+   SMART ATTENDANCE CSS
+═══════════════════════════════════════ */
+.sa-info-banner{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);border:1px solid rgba(124,106,247,.2);background:rgba(124,106,247,.05);font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.5}
+.sa-info-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);flex-shrink:0;animation:dotPulse 2s ease infinite}
+.sa-week-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.sa-week-label{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.sa-week-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);transition:all .15s}
+.sa-week-btn:hover{border-color:var(--border2);color:var(--text)}
+.sa-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.sa-sum-card{flex:1;min-width:70px;padding:12px 8px;text-align:center;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)}
+.sa-sum-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;line-height:1}
+.sa-sum-label{font-size:10px;color:var(--text2);margin-top:3px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.sa-day-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;transition:border-color .2s}
+.sa-day-card:hover{border-color:var(--border2)}
+.sa-day-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;background:var(--surface);user-select:none;gap:10px}
+.sa-day-header:hover{background:var(--surface2)}
+.sa-day-name-wrap{display:flex;align-items:baseline;gap:6px}
+.sa-day-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+.sa-day-date{font-size:11px;color:var(--text3)}
+.sa-today-pill{font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.sa-day-pills{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.sa-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;border:1px solid}
+.sa-pill-p{color:var(--green);border-color:rgba(52,211,153,.3);background:var(--green-bg)}
+.sa-pill-a{color:var(--red);border-color:rgba(248,113,113,.25);background:var(--red-bg)}
+.sa-pill-n{color:var(--text3);border-color:var(--border);background:var(--surface)}
+.sa-chevron{font-size:12px;color:var(--text3);transition:transform .2s;flex-shrink:0}
+.sa-day-card.open .sa-chevron{transform:rotate(180deg)}
+.sa-periods{border-top:1px solid var(--border)}
+.sa-row{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:10px;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .15s}
+.sa-row:last-child{border-bottom:none}
+.sa-row:hover{background:var(--surface)}
+.sa-row.present{background:rgba(52,211,153,.03)}
+.sa-row.absent{background:rgba(248,113,113,.02)}
+.sa-per-n{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text3);text-align:center}
+.sa-subj-code{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+.sa-subj-name{font-size:11px;color:var(--text2);margin-top:1px}
+.sa-subj-time{font-size:10px;color:var(--text3);margin-top:1px}
+.sa-subj-pct{font-size:10px;color:var(--text3);margin-top:1px}
+.sa-sim-row{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.sa-sim-btn{font-size:10px;font-weight:700;padding:2px 9px;border-radius:100px;border:1px solid;cursor:pointer;background:transparent;font-family:'DM Sans',sans-serif;transition:all .15s}
+.sa-sim-attend{color:var(--green);border-color:rgba(52,211,153,.35)}.sa-sim-attend:hover{background:var(--green-bg)}
+.sa-sim-skip{color:var(--red);border-color:rgba(248,113,113,.3)}.sa-sim-skip:hover{background:var(--red-bg)}
+.sa-sim-reset{color:var(--text3);border-color:var(--border);font-size:9px}.sa-sim-reset:hover{color:var(--text)}
+.sa-sim-result{font-size:10px;font-weight:700;padding:2px 9px;border-radius:100px;border:1px solid}
+.sa-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:100px;font-size:11px;font-weight:700;border:1px solid;white-space:nowrap}
+.sa-badge-p{color:var(--green);border-color:rgba(52,211,153,.3);background:var(--green-bg)}
+.sa-badge-a{color:var(--red);border-color:rgba(248,113,113,.25);background:var(--red-bg)}
+.sa-badge-n{color:var(--text3);border-color:var(--border);background:var(--surface)}
+.sa-badge-u{color:var(--text3);border-color:var(--border);background:var(--surface);opacity:.55}
+@media(max-width:480px){.sa-row{grid-template-columns:36px 1fr}}
+
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <!-- ✅ CORRECT ORDER: React first, then Firebase, then init, then app -->
+
+<!-- 0. Tesseract.js for OCR -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <!-- 1. React + Babel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
@@ -2241,6 +2360,706 @@ function AutoFetchBanner({ extInstalled: extProp, onDataReceived }) {
 
 // ══ App ═══════════════════════════════════════════════════
 // ── ProfileDropdown component ───────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════════
+//  TIMETABLE + SMART ATTENDANCE — Full System
+// ═══════════════════════════════════════════════════════════════════
+
+const PERIOD_TIMES = {
+  1:'9:10–10:00', 2:'10:00–10:50', 3:'10:50–11:40',
+  4:'11:40–12:30', 5:'1:10–2:00',  6:'2:00–2:50',
+  7:'2:50–3:40',   8:'3:40–4:30'
+};
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const PERIOD_LABELS = ['I','II','III','IV','V','VI','VII','VIII'];
+
+// ── Date helpers ──────────────────────────────────────────────────
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function dayOfWeek(ds) {
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date(ds+'T12:00:00').getDay()];
+}
+function formatDate(ds) {
+  return new Date(ds+'T12:00:00').toLocaleDateString('en-IN',{weekday:'short',month:'short',day:'numeric'});
+}
+function getWeekDates(off=0) {
+  const now=new Date(), day=now.getDay(), mon=new Date(now);
+  mon.setDate(now.getDate()-(day===0?6:day-1)+off*7);
+  return Array.from({length:5},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d.toISOString().slice(0,10);});
+}
+function predictPct(attended,conducted,skip=false,attend=false) {
+  const a=attended+(attend?1:0), c=conducted+((skip||attend)?1:0);
+  return c===0 ? 0 : Math.round((a/c)*1000)/10;
+}
+
+// ── OCR (Tesseract) ───────────────────────────────────────────────
+async function runOCR(imageFile, onProg) {
+  if (typeof Tesseract==='undefined') throw new Error('OCR engine not loaded.');
+  const r = await Tesseract.recognize(imageFile,'eng',{logger:m=>{if(m.status==='recognizing text')onProg(Math.round(m.progress*100));}});
+  return r.data.text;
+}
+
+// ── Gemini Vision scan ────────────────────────────────────────────
+async function runGeminiScan(imageFile, apiKey, onStep) {
+  if (!apiKey||!apiKey.trim()) throw new Error('Please enter your Gemini API key first.');
+  onStep('Converting image...', 10);
+  const base64 = await new Promise((res,rej)=>{
+    const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=()=>rej(new Error('Read failed')); r.readAsDataURL(imageFile);
+  });
+  const prompt = `You are a precise timetable OCR assistant. Extract the weekly class timetable from this image.
+
+OUTPUT FORMAT (follow exactly):
+MON: CODE1, CODE2, CODE3, CODE4, CODE5, CODE6, CODE7, CODE8
+TUE: CODE1, CODE2, CODE3, CODE4, CODE5, CODE6, CODE7, CODE8
+WED: CODE1, CODE2, CODE3, CODE4, CODE5, CODE6, CODE7, CODE8
+THU: CODE1, CODE2, CODE3, CODE4, CODE5, CODE6, CODE7, CODE8
+FRI: CODE1, CODE2, CODE3, CODE4, CODE5, CODE6, CODE7, CODE8
+
+RULES:
+- 8 slots per day (I–VIII periods)
+- Use exact subject code (e.g. CS401L, IT302L, CS303B)
+- Merged lab cell spanning 2 periods: repeat code in both positions
+- Empty/lunch/break slot: write --
+- After timetable, list subject mappings found at bottom of image:
+  CODE: Full Subject Name
+
+Output ONLY the timetable rows and mappings. No markdown, no explanation.`;
+
+  const body = { contents:[{parts:[{text:prompt},{inline_data:{mime_type:imageFile.type||'image/jpeg',data:base64}}]}], generationConfig:{temperature:0.1,maxOutputTokens:2048} };
+  const MODELS = ['gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash'];
+  let lastErr = null;
+  for (let mi=0;mi<MODELS.length;mi++) {
+    const model=MODELS[mi];
+    onStep(`Sending to ${mi===0?'Gemini AI':'Gemini ('+model+')'}...`, 25+mi*15);
+    try {
+      const res  = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const json = await res.json();
+      if (res.status===429) { lastErr=new Error('QUOTA_429:'+model); onStep('Quota hit, trying next...',30+mi*15); await new Promise(r=>setTimeout(r,1500)); continue; }
+      if (!res.ok) { const e=json?.error?.message||'API error '+res.status; lastErr=new Error(e); if(mi<MODELS.length-1){onStep('Trying next model...',35+mi*15);await new Promise(r=>setTimeout(r,800));continue;} throw new Error('Gemini error '+res.status+': '+e); }
+      onStep('Parsing AI response...', 85);
+      const text=json?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error('Gemini returned empty response.');
+      return text;
+    } catch(fe) {
+      if (mi===MODELS.length-1) throw fe;
+      lastErr=fe; onStep('Retrying...',40+mi*15); await new Promise(r=>setTimeout(r,1000));
+    }
+  }
+  throw new Error('All models tried. '+(lastErr?.message||'')+'  Wait ~60s or get a fresh key from aistudio.google.com.');
+}
+
+// ── Timetable parser (handles Gemini comma + KIET table format) ───
+function parseTimetableText(rawText) {
+  const lines  = rawText.split(/\n/).map(l=>l.trim()).filter(Boolean);
+  const tt     = {};  DAYS.forEach(d=>tt[d]=[]);
+  const DA = { MON:'Monday',MONDAY:'Monday',TUE:'Tuesday',TUESDAY:'Tuesday',WED:'Wednesday',WEDNESDAY:'Wednesday',THU:'Thursday',THURSDAY:'Thursday',THUR:'Thursday',FRI:'Friday',FRIDAY:'Friday' };
+
+  function extractCode(cell) {
+    if (!cell) return null;
+    const t=cell.trim();
+    if (!t||t==='--'||t==='-'||/^[lLuUnNcChH]$/.test(t)) return null;
+    const c=t.replace(/\(.*?\)/g,'').trim();
+    const codes=[]; let m; const rx=/\b([A-Z]{2,3}\d{3}[A-Z]?)\b/g;
+    while((m=rx.exec(c))!==null) codes.push(m[1]);
+    if (codes.length) return codes[0];
+    if (/professional.*elective|elective/i.test(c)) return 'ELECTIVE';
+    return null;
+  }
+  function splitCells(part) {
+    if (part.includes(','))  return part.split(',').map(s=>s.trim());
+    if (part.includes('|'))  return part.split('|').map(s=>s.trim());
+    if (part.includes('\t')) return part.split('\t').map(s=>s.trim());
+    return part.split(/\s{2,}/).map(s=>s.trim());
+  }
+
+  for (const line of lines) {
+    let foundDay=null, afterDay=line;
+    const cm=line.match(/^(MON|TUE|WED|THU|THUR|FRI|MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*[:\-]\s*(.*)/i);
+    if (cm) { foundDay=DA[cm[1].toUpperCase()]; afterDay=cm[2]; }
+    else {
+      for (const [alias,day] of Object.entries(DA)) {
+        if (line.toUpperCase().startsWith(alias+' ')||line.toUpperCase().startsWith(alias+'\t')) {
+          foundDay=day; afterDay=line.slice(alias.length).trim(); break;
+        }
+      }
+    }
+    if (!foundDay) continue;
+    const cells=splitCells(afterDay); let period=1;
+    for (let i=0;i<cells.length&&period<=8;i++) {
+      const code=extractCode(cells[i]);
+      if (code&&!tt[foundDay].find(s=>s.period===period)) {
+        tt[foundDay].push({subject:code,period,time:PERIOD_TIMES[period]||'',isLab:code.endsWith('P')});
+      }
+      period++;
+    }
+  }
+
+  // Subject map
+  const sm={};
+  const mapRx=/\b([A-Z]{2,3}\d{3}[A-Z]?)\s*[:\-–→]\s*([A-Za-z][A-Za-z0-9 &,.()\-']{3,80}?)(?=\n|$)/gm;
+  let mm;
+  while((mm=mapRx.exec(rawText))!==null) {
+    const code=mm[1].trim(), name=mm[2].trim().replace(/\s+/g,' ');
+    if (name.length>=4&&!/^[A-Z]{2,3}\d{3}/.test(name)) sm[code]=name;
+  }
+  for (const line of lines) {
+    const lm=line.match(/^([A-Z]{2,3}\d{3}[A-Z]?)\s*[:\-]\s*(.+)$/);
+    if (lm) { const code=lm[1],name=lm[2].trim(); if(name.length>=4&&!/^[A-Z]{2,3}\d{3}/.test(name)) sm[code]=name; }
+  }
+  return { timetable:tt, subjectMap:sm };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  TIMETABLE PAGE
+// ═══════════════════════════════════════════════════════════════════
+function TimetablePage({ user }) {
+  const [phase,     setPhase]     = useState('upload');
+  const [ocrPct,    setOcrPct]    = useState(0);
+  const [ocrStep,   setOcrStep]   = useState('');
+  const [imgUrl,    setImgUrl]    = useState(null);
+  const [imgFile,   setImgFile]   = useState(null);
+  const [rawText,   setRawText]   = useState('');
+  const [tt,        setTT]        = useState({});
+  const [sm,        setSM]        = useState({});
+  const [activeDay, setActiveDay] = useState('Monday');
+  const [attLogs,   setAttLogs]   = useState({});
+  const [subjects,  setSubjects]  = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState('');
+  const [drag,      setDrag]      = useState(false);
+  const [gKey,      setGKey]      = useState(()=>localStorage.getItem('bpp_gemini_key')||'');
+  const [gErr,      setGErr]      = useState('');
+  const [gLoading,  setGLoading]  = useState(false);
+  const [simMap,    setSimMap]    = useState({});
+  const fileRef = React.useRef();
+  const uid = user?.uid;
+
+  useEffect(()=>{
+    if (!uid||!db){setLoading(false);return;}
+    async function load(){
+      try{
+        const td=await db.collection('users').doc(uid).collection('timetable').doc('data').get();
+        if(td.exists){const d=td.data();setTT(d.timetable||{});setSM(d.subjectMap||{});setPhase('view');}
+        const ld=await db.collection('users').doc(uid).collection('attendanceLogs').doc('ttLogs').get();
+        if(ld.exists) setAttLogs(ld.data()||{});
+        const ss=await db.collection('users').doc(uid).collection('subjects').get();
+        setSubjects(ss.docs.map(d=>({id:d.id,...d.data()})));
+      }catch(e){console.error(e);}
+      setLoading(false);
+    }
+    load();
+  },[uid]);
+
+  async function markAtt(day,period,status){
+    const key=`${day}_${period}`, upd={...attLogs,[key]:status};
+    setAttLogs(upd);
+    if(uid&&db) await db.collection('users').doc(uid).collection('attendanceLogs').doc('ttLogs').set(upd,{merge:true}).catch(console.error);
+  }
+
+  function handleFile(file){
+    if(!file||!file.type.startsWith('image/')){setError('Please upload an image file.');return;}
+    setError('');setImgFile(file);setImgUrl(URL.createObjectURL(file));
+  }
+
+  async function runGemini(){
+    if(!imgFile)return;
+    setGErr('');setGLoading(true);setPhase('ocr');setOcrPct(0);
+    try{
+      const text=await runGeminiScan(imgFile,gKey,(step,pct)=>{setOcrStep(step);setOcrPct(pct);});
+      setRawText(text);setOcrPct(95);setOcrStep('Parsing...');
+      const{timetable:nTT,subjectMap:nSM}=parseTimetableText(text);
+      setOcrPct(100);setTT(nTT);setSM(nSM);
+      setTimeout(()=>setPhase('review'),400);
+    }catch(e){setGErr(e.message);setPhase('upload');}
+    setGLoading(false);
+  }
+
+  async function runParse(){
+    if(!imgFile)return;
+    setPhase('ocr');setOcrPct(0);setError('');
+    try{
+      setOcrStep('Loading OCR...');setOcrPct(10);
+      let text='';
+      if(typeof Tesseract!=='undefined'){setOcrStep('Recognizing...');text=await runOCR(imgFile,p=>setOcrPct(10+Math.round(p*0.6)));}
+      setRawText(text);setOcrPct(90);
+      const{timetable:nTT,subjectMap:nSM}=parseTimetableText(text);
+      setTT(nTT);setSM(nSM);setOcrPct(100);
+      setTimeout(()=>setPhase('review'),500);
+    }catch(e){setError('OCR failed: '+e.message);setPhase('upload');}
+  }
+
+  async function saveTT(){
+    if(!uid||!db){toast('Not connected','error');return;}
+    try{
+      await db.collection('users').doc(uid).collection('timetable').doc('data').set({timetable:tt,subjectMap:sm,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+      setPhase('view');toast('Timetable saved! 🗓️','success');
+    }catch(e){toast('Save failed: '+e.message,'error');}
+  }
+
+  function editCell(day,period,val){
+    setTT(prev=>{
+      const slots=(prev[day]||[]).slice(), idx=slots.findIndex(s=>s.period===period);
+      if(!val.trim()||val.trim()==='--'){if(idx>=0)slots.splice(idx,1);}
+      else{
+        const entry={subject:val.toUpperCase().trim(),period,time:PERIOD_TIMES[period]||'',isLab:val.toUpperCase().trim().endsWith('P')};
+        if(idx>=0)slots[idx]=entry;else slots.push(entry);
+        slots.sort((a,b)=>a.period-b.period);
+      }
+      return{...prev,[day]:slots};
+    });
+  }
+
+  function getSubjAtt(code){
+    const name=sm[code]; if(!name) return null;
+    return subjects.find(s=>{const n=(s.name||'').toLowerCase();return n.includes(name.toLowerCase().slice(0,12))||n.includes(code.toLowerCase().slice(0,6));})||null;
+  }
+
+  if(loading) return <div style={{textAlign:'center',padding:'60px'}}><div style={{fontSize:'36px',animation:'spin 1s linear infinite',marginBottom:'12px'}}>⏳</div><div style={{color:'var(--text2)'}}>Loading...</div></div>;
+
+  if(phase==='upload') return (
+    <div>
+      {error&&<div className="tt-error">⚠️ {error}</div>}
+      <div className={`tt-upload-zone${drag?' drag':''}`}
+        onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)}
+        onDrop={e=>{e.preventDefault();setDrag(false);const f=e.dataTransfer.files[0];if(f)handleFile(f);}}
+        onClick={()=>fileRef.current?.click()}>
+        <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFile(e.target.files[0])}/>
+        {imgUrl?(<><img src={imgUrl} alt="preview" className="tt-img-preview" onClick={e=>e.stopPropagation()}/><div style={{fontSize:'13px',color:'var(--text2)',marginBottom:'12px'}}>Selected: <strong>{imgFile?.name}</strong></div></>)
+        :(<><span className="tt-upload-icon">🗓️</span><div className="tt-upload-title">Upload Your Timetable</div><div className="tt-upload-sub">Drag & drop timetable image, or click to browse</div></>)}
+        {!imgUrl&&<div className="tt-upload-btn" onClick={e=>{e.stopPropagation();fileRef.current?.click();}}>📂 Browse Image</div>}
+      </div>
+
+      {imgUrl&&(
+        <div style={{marginTop:'20px'}}>
+          <div className="glass" style={{padding:'16px 18px',marginBottom:'14px',border:'1px solid rgba(124,106,247,.2)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}>
+              <span>🔑</span>
+              <span style={{fontFamily:'Syne,sans-serif',fontSize:'14px',fontWeight:700}}>Gemini API Key</span>
+              {gKey&&<span style={{fontSize:'11px',color:'var(--green)',background:'var(--green-bg)',border:'1px solid rgba(52,211,153,.2)',padding:'2px 8px',borderRadius:'100px',fontWeight:700}}>✓ Set</span>}
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{marginLeft:'auto',fontSize:'11px',color:'var(--accent2)',textDecoration:'none',fontWeight:600}}>Get free key →</a>
+            </div>
+            <div style={{display:'flex',gap:'8px'}}>
+              <input className="input" type="password" placeholder="Paste Gemini API key..." value={gKey}
+                onChange={e=>{const k=e.target.value;setGKey(k);localStorage.setItem('bpp_gemini_key',k);setGErr('');}}
+                style={{flex:1,fontSize:'13px',padding:'9px 12px'}}/>
+              {gKey&&<button className="btn btn-ghost" style={{padding:'9px 12px',fontSize:'12px',whiteSpace:'nowrap'}} onClick={()=>{setGKey('');localStorage.removeItem('bpp_gemini_key');}}>Change</button>}
+            </div>
+            <div style={{fontSize:'11px',color:'var(--text3)',marginTop:'5px'}}>Free tier · Your key stays on your device only</div>
+            {gErr&&(
+              <div style={{marginTop:'8px',padding:'10px',background:'var(--red-bg)',border:'1px solid rgba(248,113,113,.2)',borderRadius:'8px',fontSize:'12px',color:'var(--red)',lineHeight:'1.6'}}>
+                {/quota|429/i.test(gErr)?<><strong>⏳ Rate limit</strong> — Wait ~60s and retry.</>:<>⚠️ {gErr}</>}
+              </div>
+            )}
+          </div>
+          <div style={{display:'flex',gap:'10px',justifyContent:'flex-end',flexWrap:'wrap'}}>
+            <button className="btn btn-ghost" onClick={()=>{setImgUrl(null);setImgFile(null);setGErr('');}}>✕ Remove</button>
+            <button className="btn btn-ghost" onClick={runParse}>⚡ Scan & Parse</button>
+            <button className="btn btn-primary" onClick={runGemini} disabled={!gKey.trim()||gLoading} style={{background:'linear-gradient(135deg,#667eea,#764ba2)'}}>🤖 Scan with Gemini AI</button>
+          </div>
+        </div>
+      )}
+
+      <div className="glass" style={{padding:'20px',marginTop:'24px'}}>
+        <div className="section-title" style={{marginBottom:'10px',fontSize:'15px'}}>📝 Or paste text manually</div>
+        <div style={{fontSize:'12px',color:'var(--text2)',marginBottom:'10px'}}>Paste timetable text (rows like MON: CS401L, IT302L, ...)</div>
+        <textarea className="input" rows="5" placeholder="MON: CS401L, IT302L, CS303B, ..." value={rawText} onChange={e=>setRawText(e.target.value)} style={{fontFamily:'monospace',fontSize:'12px',resize:'vertical'}}/>
+        <div style={{display:'flex',justifyContent:'flex-end',marginTop:'10px'}}>
+          <button className="btn btn-primary" disabled={!rawText.trim()} onClick={()=>{const{timetable:nTT,subjectMap:nSM}=parseTimetableText(rawText);setTT(nTT);setSM(nSM);setPhase('review');}}>🔍 Parse</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if(phase==='ocr') return (
+    <div className="glass tt-progress-wrap">
+      <div style={{fontSize:'48px',marginBottom:'16px'}}>🔍</div>
+      <div className="tt-progress-title">Scanning Timetable...</div>
+      <div className="tt-progress-sub">{ocrStep||'Please wait...'}</div>
+      <div className="tt-progress-bar"><div className="tt-progress-fill" style={{width:`${ocrPct}%`}}/></div>
+      <div className="tt-progress-pct">{ocrPct}%</div>
+      <div className="tt-step-list">
+        {['Loading engine','Processing image','Recognizing text','Parsing structure','Done'].map((s,i)=>{
+          const pcts=[10,25,70,90,100];
+          const cls=ocrPct>=pcts[i]?'done':ocrPct>=(pcts[i-1]||0)?'active':'wait';
+          return <div key={i} className={`tt-step ${cls}`}><span>{cls==='done'?'✅':cls==='active'?'⏳':'○'}</span><span>{s}</span></div>;
+        })}
+      </div>
+    </div>
+  );
+
+  if(phase==='review') return (
+    <div>
+      <div className="glass" style={{padding:'20px',marginBottom:'20px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'16px',flexWrap:'wrap'}}>
+          <div style={{fontFamily:'Syne,sans-serif',fontSize:'18px',fontWeight:700}}>📋 Review & Edit</div>
+          <div style={{fontSize:'12px',color:'var(--text2)',flex:1}}>Click cells to edit. "--" = empty.</div>
+          <button className="btn btn-ghost" style={{fontSize:'12px',padding:'7px 14px'}} onClick={()=>setPhase('upload')}>← Back</button>
+          <button className="btn btn-primary" style={{fontSize:'12px',padding:'7px 16px'}} onClick={saveTT}>💾 Save</button>
+        </div>
+        {imgUrl&&<img src={imgUrl} alt="source" className="tt-img-preview"/>}
+        <div className="tt-grid-wrap">
+          <table className="tt-table">
+            <thead><tr><th>Day</th>{PERIOD_LABELS.map((p,i)=><th key={p}><div>{p}</div><div style={{fontSize:'9px',opacity:.7,fontWeight:400}}>{PERIOD_TIMES[i+1]}</div></th>)}</tr></thead>
+            <tbody>
+              {DAYS.map(day=>(
+                <tr key={day}>
+                  <td>{day.slice(0,3).toUpperCase()}</td>
+                  {[1,2,3,4,5,6,7,8].map(p=>{
+                    const slot=(tt[day]||[]).find(s=>s.period===p);
+                    return <td key={p}>
+                      <input style={{width:'100%',background:'transparent',border:'none',color:slot?'var(--text)':'var(--text3)',fontFamily:'Syne,sans-serif',fontSize:'12px',fontWeight:slot?700:400,textAlign:'center',outline:'none',padding:'2px',cursor:'pointer'}}
+                        value={slot?.subject||'--'}
+                        onChange={e=>editCell(day,p,e.target.value)}
+                        onFocus={e=>{if(e.target.value==='--')e.target.value='';}}
+                        onBlur={e=>{if(!e.target.value.trim())e.target.value='--';}}/>
+                      {slot?.isLab&&<div className="tt-cell-lab">LAB</div>}
+                      {sm[slot?.subject]&&<div className="tt-cell-name">{sm[slot.subject].slice(0,14)}</div>}
+                    </td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="glass" style={{padding:'20px',marginBottom:'20px'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
+          <div style={{fontFamily:'Syne,sans-serif',fontSize:'16px',fontWeight:700}}>🗺️ Subject Code Map</div>
+          <div style={{fontSize:'12px',color:'var(--text2)'}}>Map codes to full names</div>
+        </div>
+        {Object.keys(sm).length===0&&<div style={{fontSize:'13px',color:'var(--text3)',marginBottom:'10px'}}>No codes detected. Add manually.</div>}
+        <div className="tt-map-grid">
+          {Object.entries(sm).map(([code,name])=>(
+            <div key={code} className="tt-map-row">
+              <span className="tt-map-code">{code}</span><span className="tt-map-arrow">→</span>
+              <input className="tt-map-input" value={name} onChange={e=>setSM(p=>({...p,[code]:e.target.value}))}/>
+            </div>
+          ))}
+          <div className="tt-map-row" style={{border:'1px dashed var(--border2)'}}>
+            <input className="tt-map-input" placeholder="Code" style={{maxWidth:'70px',fontFamily:'Syne,sans-serif',fontWeight:700,color:'var(--accent2)'}}
+              onBlur={e=>{if(e.target.value.trim()&&!sm[e.target.value.trim()]){setSM(p=>({...p,[e.target.value.trim()]:''}));e.target.value='';}}}/>
+            <span className="tt-map-arrow">→</span>
+            <input className="tt-map-input" placeholder="Subject name" disabled/>
+          </div>
+        </div>
+        <div style={{display:'flex',justifyContent:'flex-end',marginTop:'14px'}}>
+          <button className="btn btn-primary" onClick={saveTT} style={{fontSize:'13px'}}>💾 Save All</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── View mode ──
+  const todaySlots=(tt[activeDay]||[]).sort((a,b)=>a.period-b.period);
+  const todayP=todaySlots.filter(s=>attLogs[`${activeDay}_${s.period}`]==='present').length;
+  const todayA=todaySlots.filter(s=>attLogs[`${activeDay}_${s.period}`]==='absent').length;
+
+  return (
+    <div>
+      <div className="glass" style={{padding:'18px 20px',marginBottom:'20px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'10px'}}>
+        <div>
+          <div style={{fontFamily:'Syne,sans-serif',fontSize:'18px',fontWeight:700,marginBottom:'3px'}}>🗓️ My Timetable</div>
+          <div style={{fontSize:'12px',color:'var(--text2)'}}>Mark attendance · See predictions</div>
+        </div>
+        <div style={{display:'flex',gap:'8px'}}>
+          <button className="btn btn-ghost" style={{fontSize:'12px',padding:'7px 14px'}} onClick={()=>setPhase('review')}>✏️ Edit</button>
+          <button className="btn btn-ghost" style={{fontSize:'12px',padding:'7px 14px'}} onClick={()=>setPhase('upload')}>📤 Re-upload</button>
+        </div>
+      </div>
+
+      <div className="tt-day-tabs">
+        {DAYS.map(day=>{
+          const p=(tt[day]||[]).filter(s=>attLogs[`${day}_${s.period}`]==='present').length;
+          return <button key={day} className={`tt-day-tab${activeDay===day?' active':''}`} onClick={()=>setActiveDay(day)}>
+            {day.slice(0,3).toUpperCase()}{p>0&&<span style={{marginLeft:'4px',fontSize:'10px',opacity:.85}}>({p}✅)</span>}
+          </button>;
+        })}
+      </div>
+
+      {todaySlots.length>0&&(
+        <div className="tt-today-stats">
+          {[{v:todaySlots.length,l:'Periods',c:'var(--text)'},{v:todayP,l:'Present',c:'var(--green)'},{v:todayA,l:'Absent',c:'var(--red)'},{v:todaySlots.length-todayP-todayA,l:'Unmarked',c:'var(--text2)'}].map((x,i)=>(
+            <div key={i} className="tt-today-stat"><div className="tt-today-stat-val" style={{color:x.c}}>{x.v}</div><div className="tt-today-stat-label">{x.l}</div></div>
+          ))}
+        </div>
+      )}
+
+      {todaySlots.length===0
+        ?<div className="glass empty-state"><div className="empty-icon">📅</div><div className="empty-title">No classes on {activeDay}</div></div>
+        :<div className="tt-period-list">
+          {[1,2,3,4,5,6,7,8].map(p=>{
+            const slot=todaySlots.find(s=>s.period===p); if(!slot) return null;
+            const att=attLogs[`${activeDay}_${p}`];
+            const subj=getSubjAtt(slot.subject);
+            const fullName=sm[slot.subject]||slot.subject;
+            const attd=subj?.attended??0, cond=subj?.conducted??0;
+            const pAtt=cond>0?predictPct(attd,cond,false,true):null;
+            const pSkip=cond>0?predictPct(attd,cond,true,false):null;
+            const cur=cond>0?Math.round((attd/cond)*1000)/10:null;
+            const simKey=`${activeDay}_${p}`, sim=simMap[simKey];
+            return (
+              <div key={p} className={`tt-period-row${att?' '+att:''}`}>
+                <div><div className="tt-per-num">{p}</div><div style={{fontSize:'9px',color:'var(--text3)',textAlign:'center'}}>{PERIOD_LABELS[p-1]}</div></div>
+                <div>
+                  <div className="tt-per-subj" style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                    {slot.subject}{slot.isLab&&<span className="tt-cell-lab">LAB</span>}
+                  </div>
+                  {fullName!==slot.subject&&<div className="tt-per-name">{fullName.slice(0,38)}</div>}
+                  <div className="tt-per-time">{slot.time}</div>
+                  {cur!==null&&<div style={{fontSize:'10px',color:'var(--text3)',marginTop:'2px'}}>Now: <span style={{fontWeight:700,color:cur>=75?'var(--green)':cur>=65?'var(--yellow)':'var(--red)'}}>{cur}%</span></div>}
+                  {cond>0&&(
+                    <div className="tt-pred-chips">
+                      {sim==='attend'
+                        ?<span className="tt-pred-result" style={{color:pAtt>=75?'var(--green)':'var(--red)',borderColor:pAtt>=75?'rgba(52,211,153,.3)':'rgba(248,113,113,.3)',background:pAtt>=75?'var(--green-bg)':'var(--red-bg)'}}>✅ Attend→{pAtt}%</span>
+                        :<button className="tt-pred-chip tt-pred-attend" onClick={()=>setSimMap(p=>({...p,[simKey]:'attend'}))}>If attend→{pAtt}%</button>}
+                      {sim==='skip'
+                        ?<span className="tt-pred-result" style={{color:pSkip>=75?'var(--green)':'var(--red)',borderColor:pSkip>=75?'rgba(52,211,153,.3)':'rgba(248,113,113,.3)',background:pSkip>=75?'var(--green-bg)':'var(--red-bg)'}}>❌ Skip→{pSkip}%</span>
+                        :<button className="tt-pred-chip tt-pred-skip" onClick={()=>setSimMap(p=>({...p,[simKey]:'skip'}))}>If skip→{pSkip}%</button>}
+                      {sim&&<button className="tt-pred-chip" style={{color:'var(--text3)',borderColor:'var(--border)'}} onClick={()=>setSimMap(p=>{const n={...p};delete n[simKey];return n;})}>↩</button>}
+                    </div>
+                  )}
+                </div>
+                <div style={{display:'flex',gap:'6px',flexShrink:0}}>
+                  <button title="Present" onClick={()=>markAtt(activeDay,p,att==='present'?undefined:'present')} style={{width:'34px',height:'34px',borderRadius:'50%',border:`2px solid ${att==='present'?'var(--green)':'var(--border)'}`,background:att==='present'?'var(--green-bg)':'var(--surface)',cursor:'pointer',fontSize:'14px',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}}>✅</button>
+                  <button title="Absent" onClick={()=>markAtt(activeDay,p,att==='absent'?undefined:'absent')} style={{width:'34px',height:'34px',borderRadius:'50%',border:`2px solid ${att==='absent'?'var(--red)':'var(--border)'}`,background:att==='absent'?'var(--red-bg)':'var(--surface)',cursor:'pointer',fontSize:'14px',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}}>❌</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      }
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SNAPSHOT ENGINE (Firebase-backed, device-independent)
+// ═══════════════════════════════════════════════════════════════════
+async function saveAttendanceSnapshot(uid, subjects) {
+  if (!uid||!db||!subjects.length) return;
+  const date=todayStr(), snap={};
+  subjects.forEach(s=>{snap[s.name]={attended:s.attended||0,conducted:s.conducted||0};});
+  try {
+    await db.collection('users').doc(uid).collection('attendanceSnapshots').doc(date)
+      .set({date,subjects:snap,savedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  } catch(e){console.error('[BPP] Snapshot save error:',e);}
+}
+
+function compareSnapshots(oldSnap, newSnap) {
+  if(!oldSnap||!newSnap) return [];
+  const date=todayStr(), logs=[];
+  const all=new Set([...Object.keys(oldSnap.subjects||{}),...Object.keys(newSnap.subjects||{})]);
+  for(const name of all){
+    const o=(oldSnap.subjects||{})[name], n=(newSnap.subjects||{})[name];
+    if(!o||!n) continue;
+    const dA=(n.attended||0)-(o.attended||0), dC=(n.conducted||0)-(o.conducted||0);
+    logs.push({date,subject:name,status:dC>0?(dA>0?'present':'absent'):'no-class',dA,dC});
+  }
+  return logs;
+}
+
+async function runAttendanceSnapshot(uid, newSubjects) {
+  if(!uid||!db||!newSubjects?.length) return;
+  const today=todayStr();
+  try{
+    const snapColl=db.collection('users').doc(uid).collection('attendanceSnapshots');
+    const existing=await snapColl.orderBy('date','desc').limit(2).get();
+    let oldSnap=null;
+    existing.docs.forEach(doc=>{if(!oldSnap&&doc.id!==today)oldSnap=doc.data();});
+    const newSnapObj={date:today,subjects:{}};
+    newSubjects.forEach(s=>{newSnapObj.subjects[s.name]={attended:s.attended||0,conducted:s.conducted||0};});
+    if(oldSnap){
+      const logs=compareSnapshots(oldSnap,newSnapObj).filter(l=>l.status!=='no-class');
+      if(logs.length>0){
+        const batch=db.batch();
+        logs.forEach(log=>{
+          const docId=`${log.date}_${log.subject.replace(/\s+/g,'_').slice(0,40)}`;
+          batch.set(db.collection('users').doc(uid).collection('dailyAttendanceLogs').doc(docId),
+            {date:log.date,subject:log.subject,status:log.status,savedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        });
+        await batch.commit();
+        toast(`📅 ${logs.length} attendance log${logs.length>1?'s':''} recorded!`,'success');
+      }
+    }
+    await saveAttendanceSnapshot(uid,newSubjects);
+  }catch(e){console.error('[BPP] Snapshot error:',e);}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SMART ATTENDANCE PAGE
+// ═══════════════════════════════════════════════════════════════════
+function SmartAttendancePage({ user }) {
+  const uid=user?.uid;
+  const [weekOff,  setWeekOff]  = useState(0);
+  const [openDays, setOpenDays] = useState(new Set([DAYS[Math.max(0,new Date().getDay()-1)]]));
+  const [logs,     setLogs]     = useState([]);
+  const [tt,       setTT]       = useState({});
+  const [sm,       setSM]       = useState({});
+  const [subjects, setSubjects] = useState([]);
+  const [snapDates,setSnapDates]= useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [simMap,   setSimMap]   = useState({});
+
+  const weekDates=getWeekDates(weekOff);
+  const weekLabel=(()=>{
+    const s=new Date(weekDates[0]+'T12:00:00'),e=new Date(weekDates[4]+'T12:00:00'),o={month:'short',day:'numeric'};
+    return `${s.toLocaleDateString('en-IN',o)} – ${e.toLocaleDateString('en-IN',o)}`;
+  })();
+
+  useEffect(()=>{
+    if(!uid||!db){setLoading(false);return;}
+    async function load(){
+      try{
+        const td=await db.collection('users').doc(uid).collection('timetable').doc('data').get();
+        if(td.exists){setTT(td.data().timetable||{});setSM(td.data().subjectMap||{});}
+        const sc=await db.collection('users').doc(uid).collection('attendanceSnapshots').orderBy('date','desc').limit(30).get();
+        setSnapDates(sc.docs.map(d=>d.id));
+        const start=getWeekDates(-1)[0],end=getWeekDates(1)[4];
+        const ls=await db.collection('users').doc(uid).collection('dailyAttendanceLogs').where('date','>=',start).where('date','<=',end).get();
+        setLogs(ls.docs.map(d=>d.data()));
+        const ss=await db.collection('users').doc(uid).collection('subjects').get();
+        setSubjects(ss.docs.map(d=>({id:d.id,...d.data()})));
+      }catch(e){console.error('SmartAtt:',e);}
+      setLoading(false);
+    }
+    load();
+  },[uid,weekOff]);
+
+  function toggleDay(day){setOpenDays(prev=>{const s=new Set(prev);if(s.has(day))s.delete(day);else s.add(day);return s;});}
+  function getLog(dateStr,subj){return logs.find(l=>l.date===dateStr&&l.subject===subj)?.status||null;}
+  function getSubjData(name){return subjects.find(s=>(s.name||'').toLowerCase().trim()===name.toLowerCase().trim())||null;}
+
+  const weekSum=weekDates.reduce((acc,date)=>{
+    logs.filter(l=>l.date===date).forEach(l=>{if(l.status==='present')acc.p++;else if(l.status==='absent')acc.a++;});
+    return acc;
+  },{p:0,a:0});
+
+  const todayISO=todayStr();
+  const hasTT=Object.values(tt).some(d=>d?.length>0);
+
+  if(loading) return <div style={{textAlign:'center',padding:'60px'}}><div style={{fontSize:'36px',animation:'spin 1s linear infinite',marginBottom:'12px'}}>⏳</div><div style={{color:'var(--text2)',fontSize:'13px'}}>Loading...</div></div>;
+
+  return (
+    <div>
+      {/* Info */}
+      <div className="sa-info-banner">
+        <span className="sa-info-dot"/>
+        <span>
+          {snapDates.length===0?'🔴 No snapshots yet. Fetch attendance from CyberVidya to start tracking.':
+           snapDates.length===1?'🟡 First snapshot saved! Fetch again tomorrow to auto-generate logs.':
+           `🟢 Tracking active — ${snapDates.length} snapshots. Last: ${formatDate(snapDates[0])}`}
+        </span>
+      </div>
+
+      {!hasTT&&(
+        <div style={{padding:'12px 16px',background:'var(--yellow-bg)',border:'1px solid rgba(251,191,36,.2)',borderRadius:'var(--radius-sm)',fontSize:'13px',color:'var(--yellow)',marginBottom:'16px'}}>
+          ⚠️ No timetable yet. Go to <strong>Timetable</strong> tab to upload your schedule.
+        </div>
+      )}
+
+      {/* Week nav */}
+      <div className="sa-week-nav">
+        <button className="sa-week-btn" onClick={()=>setWeekOff(p=>p-1)}>‹</button>
+        <div style={{textAlign:'center'}}>
+          <div className="sa-week-label">Week of {weekLabel}</div>
+          {weekOff===0&&<div style={{fontSize:'11px',color:'var(--accent2)',marginTop:'2px'}}>Current Week</div>}
+        </div>
+        <button className="sa-week-btn" onClick={()=>setWeekOff(p=>p+1)}>›</button>
+      </div>
+
+      {/* Summary */}
+      <div className="sa-summary">
+        {[{v:weekSum.p,l:'Present',c:'var(--green)'},{v:weekSum.a,l:'Absent',c:'var(--red)'},
+          {v:weekSum.p+weekSum.a,l:'Total',c:'var(--text2)'},
+          {v:weekSum.p+weekSum.a>0?Math.round((weekSum.p/(weekSum.p+weekSum.a))*100)+'%':'—',l:'This Week',c:'var(--accent2)'}
+        ].map((x,i)=><div key={i} className="sa-sum-card"><div className="sa-sum-val" style={{color:x.c}}>{x.v}</div><div className="sa-sum-label">{x.l}</div></div>)}
+      </div>
+
+      {/* Day cards */}
+      {weekDates.map((dateStr,di)=>{
+        const dayName=DAYS[di],isToday=dateStr===todayISO,isOpen=openDays.has(dayName);
+        const daySlots=(tt[dayName]||[]).sort((a,b)=>a.period-b.period);
+        const dayLogs=logs.filter(l=>l.date===dateStr);
+        const pCt=dayLogs.filter(l=>l.status==='present').length;
+        const aCt=dayLogs.filter(l=>l.status==='absent').length;
+        const hasSnap=snapDates.includes(dateStr);
+
+        return (
+          <div key={dayName} className={`sa-day-card${isOpen?' open':''}`}>
+            <div className="sa-day-header" onClick={()=>toggleDay(dayName)}>
+              <div>
+                <div className="sa-day-name-wrap">
+                  <span className="sa-day-name">{dayName}</span>
+                  {isToday&&<span className="sa-today-pill">TODAY</span>}
+                </div>
+                <div className="sa-day-date">{formatDate(dateStr)}</div>
+              </div>
+              <div className="sa-day-pills">
+                {pCt>0&&<span className="sa-pill sa-pill-p">✅ {pCt}</span>}
+                {aCt>0&&<span className="sa-pill sa-pill-a">❌ {aCt}</span>}
+                {!dayLogs.length&&hasSnap&&<span className="sa-pill sa-pill-n">No classes</span>}
+                {!dayLogs.length&&!hasSnap&&daySlots.length>0&&<span className="sa-pill sa-pill-n">No data</span>}
+              </div>
+              <span className="sa-chevron">▾</span>
+            </div>
+
+            {isOpen&&(
+              <div className="sa-periods">
+                {daySlots.length===0
+                  ?<div style={{padding:'18px',color:'var(--text3)',fontSize:'13px',textAlign:'center'}}>No periods scheduled</div>
+                  :daySlots.map(slot=>{
+                    const subjName=sm[slot.subject]||slot.subject;
+                    const rawSt=getLog(dateStr,subjName)||getLog(dateStr,slot.subject);
+                    const st=rawSt==='present'?'present':rawSt==='absent'?'absent':rawSt==='no-class'?'no-class':null;
+                    const subjData=getSubjData(subjName)||getSubjData(slot.subject);
+                    const simKey=`${slot.subject}_${dateStr}`,sim=simMap[simKey];
+                    const attd=subjData?.attended??0,cond=subjData?.conducted??0;
+                    const pAtt=cond>0?predictPct(attd,cond,false,true):null;
+                    const pSkip=cond>0?predictPct(attd,cond,true,false):null;
+                    const cur=cond>0?Math.round((attd/cond)*1000)/10:null;
+
+                    return (
+                      <div key={slot.period} className={`sa-row${st?' '+st:''}`}>
+                        <div className="sa-per-n">{slot.period}</div>
+                        <div>
+                          <div className="sa-subj-code" style={{display:'flex',alignItems:'center',gap:'5px'}}>
+                            {slot.subject}
+                            {slot.isLab&&<span style={{fontSize:'9px',fontWeight:800,padding:'1px 5px',borderRadius:'100px',background:'var(--yellow-bg)',color:'var(--yellow)',border:'1px solid rgba(251,191,36,.2)'}}>LAB</span>}
+                          </div>
+                          {subjName!==slot.subject&&<div className="sa-subj-name">{subjName.slice(0,40)}</div>}
+                          <div className="sa-subj-time">{slot.time}</div>
+                          {cur!==null&&<div className="sa-subj-pct">Now: <span style={{fontWeight:700,color:cur>=75?'var(--green)':cur>=65?'var(--yellow)':'var(--red)'}}>{cur}%</span></div>}
+                          {cond>0&&(
+                            <div className="sa-sim-row">
+                              {sim==='attend'
+                                ?<span className="sa-sim-result" style={{color:pAtt>=75?'var(--green)':'var(--red)',borderColor:pAtt>=75?'rgba(52,211,153,.3)':'rgba(248,113,113,.3)',background:pAtt>=75?'var(--green-bg)':'var(--red-bg)'}}>✅→{pAtt}%</span>
+                                :<button className="sa-sim-btn sa-sim-attend" onClick={()=>setSimMap(p=>({...p,[simKey]:'attend'}))}>Attend→{pAtt}%</button>}
+                              {sim==='skip'
+                                ?<span className="sa-sim-result" style={{color:pSkip>=75?'var(--green)':'var(--red)',borderColor:pSkip>=75?'rgba(52,211,153,.3)':'rgba(248,113,113,.3)',background:pSkip>=75?'var(--green-bg)':'var(--red-bg)'}}>❌→{pSkip}%</span>
+                                :<button className="sa-sim-btn sa-sim-skip" onClick={()=>setSimMap(p=>({...p,[simKey]:'skip'}))}>Skip→{pSkip}%</button>}
+                              {sim&&<button className="sa-sim-btn sa-sim-reset" onClick={()=>setSimMap(p=>{const n={...p};delete n[simKey];return n;})}>↩ reset</button>}
+                            </div>
+                          )}
+                        </div>
+                        <div className={`sa-badge ${st==='present'?'sa-badge-p':st==='absent'?'sa-badge-a':st==='no-class'?'sa-badge-n':'sa-badge-u'}`}>
+                          {st==='present'?'✅ Present':st==='absent'?'❌ Absent':st==='no-class'?'⚪ No Class':'— No data'}
+                        </div>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div style={{marginTop:'14px',fontSize:'11px',color:'var(--text3)',textAlign:'center',lineHeight:1.6}}>
+        📌 Auto-tracked on each CyberVidya fetch · Firebase-backed · Works across all devices ☁️
+      </div>
+    </div>
+  );
+}
+
+
 const AVATAR_COLORS = ['#7c6af7','#ec4899','#f97316','#10b981','#06b6d4','#a855f7','#f59e0b'];
 const AVATAR_EMOJIS = ['🎓','😎','🚀','⚡','🔥','🎯','💎','🦁','🐉','🌙'];
 
@@ -2708,14 +3527,22 @@ function App() {
           )}
         </div>
         <AutoFetchBanner
-          onDataReceived={(subs)=>{ setSyncBanner({subjects:subs}); setTab('subjects'); }}
+          onDataReceived={(subs)=>{
+            setSyncBanner({subjects:subs});
+            setTab('subjects');
+            if (user?.uid) setTimeout(()=>runAttendanceSnapshot(user.uid, subs), 2500);
+          }}
         />
         <div className="tabs">
-          <button className={`tab-btn ${tab==='subjects'?'active':''}`} onClick={()=>setTab('subjects')}>📚 My Subjects</button>
-          <button className={`tab-btn ${tab==='calc'?'active':''}`} onClick={()=>setTab('calc')}>🧮 Calculator</button>
+          <button className={`tab-btn ${tab==='subjects'?'active':''}`} onClick={()=>setTab('subjects')}>📚 Subjects</button>
+          <button className={`tab-btn ${tab==='calc'?'active':''}`} onClick={()=>setTab('calc')}>🧮 Calc</button>
+          <button className={`tab-btn ${tab==='timetable'?'active':''}`} onClick={()=>setTab('timetable')}>🗓️ Timetable</button>
+          <button className={`tab-btn ${tab==='smart'?'active':''}`} onClick={()=>setTab('smart')}>📅 Smart</button>
         </div>
-        {tab==='subjects' && <Subjects user={user}/>}
-        {tab==='calc'     && <Calculator/>}
+        {tab==='subjects'  && <Subjects user={user}/>}
+        {tab==='calc'      && <Calculator/>}
+        {tab==='timetable' && <TimetablePage user={user}/>}
+        {tab==='smart'     && <SmartAttendancePage user={user}/>}
       </main>
       <footer className="footer">Built with <span>❤️</span> for KIET students — bunk planning is a life skill 😎</footer>
       <ToastContainer/>
