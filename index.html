@@ -3030,8 +3030,31 @@ function App() {
       setSyncBanner({ subjects });
       setTab('subjects');
       toast(`🎓 ${subjects.length} subjects fetched from CyberVidya!`, 'success');
+
+      // ── Save timetable to Firebase if extension sent it ────
+      const extTT      = detail.timetable || null;
+      const extSubjMap = detail.subjectMap || null;
+      if (extTT && user && db) {
+        (async () => {
+          try {
+            // Only save if it has actual data
+            const hasData = Object.values(extTT).some(d => Array.isArray(d) && d.length > 0);
+            if (hasData) {
+              await db.collection('users').doc(user.uid).collection('timetable').doc('data').set({
+                timetable:  extTT,
+                subjectMap: extSubjMap || {},
+                updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+                source:     'extension_calendar',
+              }, { merge: true });
+              toast('🗓️ Timetable updated from calendar!', 'success');
+              console.log('[BPP] Timetable saved from extension');
+            }
+          } catch(e) { console.warn('[BPP] Timetable save failed:', e); }
+        })();
+      }
+
       // ── Fire Smart Dashboard pipeline ──────────────────────
-      window.dispatchEvent(new CustomEvent('bpp-smart-sync', { detail: { subjects } }));
+      window.dispatchEvent(new CustomEvent('bpp-smart-sync', { detail: { subjects, timetable: extTT } }));
     } else {
       console.warn('[BunkPlanner] processSyncPayload: no valid subjects parsed', detail);
       toast('Could not parse CyberVidya data 😅', 'error');
