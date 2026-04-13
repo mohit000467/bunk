@@ -523,6 +523,19 @@ input[type=number]{-moz-appearance:textfield}
   border:1px solid var(--border);
 }
 
+/* ── Timetable ── */
+.tt-day-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;}
+.tt-day-header{background:linear-gradient(135deg,rgba(124,106,247,.1),rgba(167,139,250,.08));padding:12px 14px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;text-align:center;color:var(--text);}
+.tt-class-card{padding:12px 14px;border-bottom:1px solid var(--border2);position:relative;transition:all .2s;background:var(--surface);}
+.tt-class-card:last-child{border-bottom:none;}
+.tt-class-card:hover{background:var(--surface2);}
+.tt-time{font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px;}
+.tt-subject{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;}
+.tt-action{position:absolute;right:10px;top:10px;opacity:0;transition:opacity .2s;background:var(--red-bg);border:1px solid rgba(248,113,113,.2);border-radius:4px;color:var(--red);cursor:pointer;font-size:10px;padding:4px 6px;font-weight:700;}
+.tt-class-card:hover .tt-action{opacity:1;}
+.tt-action:hover{background:rgba(248,113,113,.2);color:var(--red);}
+.tt-import-box{background:rgba(124,106,247,.04);border:1px dashed var(--accent);border-radius:var(--radius-sm);padding:24px;margin-bottom:24px;animation:slideDown .3s ease;}
+
 </style>
 </head>
 <body>
@@ -2399,6 +2412,215 @@ function ProfileDropdown({ user, displayName, initials, profileData, setProfileD
   );
 }
 
+// ══════════════════════════════════════════════════════════════
+//  Timetable — Day-wise Schedule
+// ══════════════════════════════════════════════════════════════
+
+function parseTimetableText(raw) {
+  const results = [];
+  const lines = raw.split(/[\r\n\t]+/).map(l=>l.trim()).filter(Boolean);
+  const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  let currentDay = -1;
+  let lastTime = '';
+
+  for (let i=0; i<lines.length; i++) {
+    const line = lines[i];
+    const lLow = line.toLowerCase();
+    const isDay = days.indexOf(lLow);
+    if (isDay !== -1) {
+      currentDay = isDay;
+      continue;
+    }
+    for (let d=0; d<days.length; d++) {
+       if (lLow.startsWith(days[d])) {
+          currentDay = d; break;
+       }
+    }
+    
+    // Look for times like 09:00 AM - 10:00 AM or 10:00-11:00
+    const timeRe = /(\d{1,2}:\d{2}(?:\s*[AaPp][Mm])?\s*[-to]+\s*\d{1,2}:\d{2}(?:\s*[AaPp][Mm])?)/i;
+    const tMatch = line.match(timeRe);
+    
+    if (tMatch) {
+       lastTime = tMatch[1].trim();
+       let subject = line.replace(tMatch[0], '').replace(/^\s*[-:]\s*/,'').trim();
+       if (subject.length > 2) {
+           if (currentDay !== -1) {
+               results.push({ day: currentDay, time: lastTime, subject: subject });
+           }
+       } else if (i+1 < lines.length) {
+           let nextL = lines[i+1];
+           if (currentDay !== -1 && !timeRe.test(nextL) && days.indexOf(nextL.toLowerCase())===-1) {
+               results.push({ day: currentDay, time: lastTime, subject: nextL });
+           }
+       }
+    }
+  }
+  return results;
+}
+
+function Timetable({user}) {
+  const [schedule, setSchedule] = useState([]);
+  const [syncing, setSyncing] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [form, setForm] = useState({day:0, time:'', subject:''});
+  const [importText, setImportText] = useState('');
+
+  const col = (firebaseReady && user) 
+    ? db.collection('users').doc(user.uid).collection('timetable')
+    : null;
+
+  useEffect(()=>{
+    if(!col){ setSyncing(false); return; }
+    setSyncing(true);
+    const unsub = col.onSnapshot(snap=>{
+      const loaded = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      setSchedule(loaded);
+      setSyncing(false);
+    }, err=>{ console.error(err); setSyncing(false); toast("Timetable sync error!","error"); });
+    return ()=>unsub();
+  }, [user && user.uid]);
+
+  async function handleAdd() {
+    if(!form.time.trim() || !form.subject.trim()) { toast('Please fill all fields', 'error'); return; }
+    await col.add({ day: +form.day, time: form.time.trim(), subject: form.subject.trim() });
+    toast('Class added!', 'success');
+    setForm({...form, time:'', subject:''});
+    setShowAdd(false);
+  }
+
+  async function handleDelete(id) {
+    if(window.confirm('Delete this class?')) {
+      await col.doc(id).delete();
+      toast('Class removed', 'info');
+    }
+  }
+
+  async function handleImport() {
+    if(!importText.trim()) { toast('Please paste your timetable', 'error'); return; }
+    const parsed = parseTimetableText(importText);
+    if(parsed.length === 0) { toast('Could not parse any classes', 'error'); return; }
+    toast(`Found ${parsed.length} classes, saving...`, 'success');
+    const batch = db.batch();
+    parsed.forEach(p => {
+       const docRef = col.doc();
+       batch.set(docRef, { ...p });
+    });
+    await batch.commit();
+    toast('Timetable imported!', 'success');
+    setShowImport(false);
+    setImportText('');
+  }
+
+  async function handleClearAll() {
+    if(!window.confirm('Clear all timetable data?')) return;
+    const snap = await col.get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    toast('Timetable cleared', 'info');
+  }
+
+  const daysLabels = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const grid = daysLabels.map(()=>[]);
+  schedule.forEach(s => { if(grid[s.day]) grid[s.day].push(s); });
+  
+  grid.forEach(dayClasses => {
+     dayClasses.sort((a,b) => a.time.localeCompare(b.time));
+  });
+
+  return (
+    <div>
+      <div className="subjects-header">
+        <div className="section-title" style={{margin:0, display:'flex', alignItems:'center', gap:'10px'}}>
+           🕒 Weekly Timetable
+           {schedule.length > 0 && (
+              <span style={{fontFamily:'DM Sans,sans-serif',fontSize:'13px',fontWeight:500,color:'var(--text3)',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'100px',padding:'2px 10px'}}>
+                {schedule.length} class{schedule.length!==1?'es':''}
+              </span>
+           )}
+        </div>
+        <div style={{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
+          <button className="btn btn-ghost" onClick={()=>setShowImport(p=>!p)}>📥 Import from CyberVidya</button>
+          <button className="btn btn-primary" onClick={()=>setShowAdd(p=>!p)}>{showAdd?'✕ Close':'➕ Add Class'}</button>
+          {schedule.length > 0 && <button className="btn btn-danger" onClick={handleClearAll}>🗑️ Clear All</button>}
+        </div>
+      </div>
+
+      {showImport && (
+        <div className="tt-import-box">
+          <div className="modal-title" style={{fontSize:'16px'}}>📋 Paste CyberVidya Timetable</div>
+          <div style={{fontSize:'12px',color:'var(--text2)',marginBottom:'10px'}}>
+            Copy the text from your CyberVidya timetable and paste it below. The system will look for a pattern like <strong style={{color:'var(--accent2)'}}>Monday</strong> followed by <strong style={{color:'var(--accent2)'}}>09:00 AM - 10:00 AM Subject Name</strong>.
+          </div>
+          <textarea
+             value={importText}
+             onChange={e=>setImportText(e.target.value)}
+             placeholder={"Monday\\n09:00 AM - 10:00 AM  Data Structures\\nTuesday..."}
+             style={{width:'100%',minHeight:'140px',padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',color:'var(--text)',marginBottom:'10px',fontFamily:'monospace',fontSize:'12px'}}
+          />
+          <button className="btn btn-primary" onClick={handleImport}>Parse & Import</button>
+        </div>
+      )}
+
+      {showAdd && (
+        <div className="glass add-form" style={{marginBottom:'24px'}}>
+           <div className="add-form-grid" style={{gridTemplateColumns:'1fr 1fr 2fr'}}>
+              <div className="input-wrap">
+                 <label className="input-label">Day</label>
+                 <select className="input" style={{appearance:'none'}} value={form.day} onChange={e=>setForm({...form, day:+e.target.value})}>
+                    {daysLabels.map((d,i)=><option key={i} value={i} style={{background:'var(--bg)',color:'var(--text)'}}>{d}</option>)}
+                 </select>
+              </div>
+              <div className="input-wrap">
+                 <label className="input-label">Time Slot</label>
+                 <input className="input" placeholder="e.g. 09:00 - 10:00 AM" value={form.time} onChange={e=>setForm({...form, time:e.target.value})}/>
+              </div>
+              <div className="input-wrap">
+                 <label className="input-label">Subject</label>
+                 <input className="input" placeholder="e.g. Data Structures" value={form.subject} onChange={e=>setForm({...form, subject:e.target.value})}/>
+              </div>
+           </div>
+           <div className="add-form-footer">
+              <button className="btn btn-primary" onClick={handleAdd}>Add to Schedule ✅</button>
+           </div>
+        </div>
+      )}
+
+      {syncing && schedule.length===0 ? (
+        <div style={{textAlign:'center',padding:'40px',color:'var(--text3)'}}>
+          <div style={{fontSize:'40px',animation:'spin 1s linear infinite',marginBottom:'16px'}}>⏳</div>
+          <div>Loading timetable...</div>
+        </div>
+      ) : schedule.length===0 ? (
+        <div className="glass empty-state">
+          <div className="empty-icon">📅</div>
+          <div className="empty-title">Your week is empty!</div>
+          <div className="empty-sub">Import your timetable to never forget a class.</div>
+        </div>
+      ) : (
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'20px', alignItems:'start'}}>
+           {daysLabels.map((day, dIdx) => (
+              <div key={dIdx} className="tt-day-col" style={{display: grid[dIdx].length?'block':'none' }}>
+                 <div className="tt-day-header">{day}</div>
+                 <div>
+                    {grid[dIdx].map((s, idx) => (
+                       <div key={s.id} className="tt-class-card" style={{animationDelay:`${idx*0.05}s`,animation:'slideRight .3s ease backwards'}}>
+                          <div className="tt-time">🕒 {s.time}</div>
+                          <div className="tt-subject">{s.subject}</div>
+                          <button className="tt-action" onClick={()=>handleDelete(s.id)}>🗑️ Remove</button>
+                       </div>
+                    ))}
+                 </div>
+              </div>
+           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [user,setUser]           = useState(undefined);
   const [dark,setDark]           = useState(true);
@@ -2713,9 +2935,11 @@ function App() {
         <div className="tabs">
           <button className={`tab-btn ${tab==='subjects'?'active':''}`} onClick={()=>setTab('subjects')}>📚 My Subjects</button>
           <button className={`tab-btn ${tab==='calc'?'active':''}`} onClick={()=>setTab('calc')}>🧮 Calculator</button>
+          <button className={`tab-btn ${tab==='timetable'?'active':''}`} onClick={()=>setTab('timetable')}>🕒 Timetable</button>
         </div>
-        {tab==='subjects' && <Subjects user={user}/>}
-        {tab==='calc'     && <Calculator/>}
+        {tab==='subjects'  && <Subjects user={user}/>}
+        {tab==='calc'      && <Calculator/>}
+        {tab==='timetable' && <Timetable user={user}/>}
       </main>
       <footer className="footer">Built with <span>❤️</span> for KIET students — bunk planning is a life skill 😎</footer>
       <ToastContainer/>
